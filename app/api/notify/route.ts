@@ -158,15 +158,20 @@ export async function POST(req: NextRequest) {
   const sent = results.filter((result) => result.success).length;
   const failed = results.length - sent;
 
-  const failures = results
-    .map((result, index) => ({ result, phoneSuffix: withPhone[index]?.phone.slice(-4) ?? "" }))
-    .filter(({ result }) => !result.success)
-    .map(({ result, phoneSuffix }) => ({
-      phoneSuffix,
-      reason: result.reason,
-      twilioCode: "twilioCode" in result ? result.twilioCode : undefined,
-      twilioMessage: "twilioMessage" in result ? result.twilioMessage : undefined,
-    }));
+  const failures = results.flatMap((result, index) => {
+    if (result.success) {
+      return [];
+    }
+    const phoneSuffix = withPhone[index]?.phone.slice(-4) ?? "";
+    return [
+      {
+        phoneSuffix,
+        reason: result.reason,
+        twilioCode: result.twilioCode,
+        twilioMessage: result.twilioMessage,
+      },
+    ];
+  });
 
   return NextResponse.json({
     sent,

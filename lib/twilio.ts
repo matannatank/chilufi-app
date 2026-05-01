@@ -22,9 +22,37 @@ function formatPhone(phone: string): string {
   return `+972${digits}`;
 }
 
-export async function sendWhatsApp(toPhone: string, message: string) {
+export type WhatsAppSendResult =
+  | { success: true; sid: string }
+  | {
+      success: false;
+      reason: "twilio_not_configured" | "send_failed" | "invalid_phone";
+      twilioCode?: number;
+      twilioMessage?: string;
+    };
+
+function twilioErrorFields(error: unknown): { code?: number; message?: string } {
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const code = record.code;
+    const message = record.message;
+    return {
+      code: typeof code === "number" ? code : undefined,
+      message: typeof message === "string" ? message : undefined,
+    };
+  }
+  return {};
+}
+
+export async function sendWhatsApp(toPhone: string, message: string): Promise<WhatsAppSendResult> {
   if (!hasTwilioConfig || !client || !fromNumber) {
     return { success: false, reason: "twilio_not_configured" };
+  }
+
+  const trimmed = toPhone.trim();
+  const digitsOnly = trimmed.replace(/\D/g, "");
+  if (!trimmed || digitsOnly.length < 9) {
+    return { success: false, reason: "invalid_phone" };
   }
 
   try {
@@ -37,8 +65,14 @@ export async function sendWhatsApp(toPhone: string, message: string) {
 
     return { success: true, sid: result.sid };
   } catch (error) {
+    const { code, message } = twilioErrorFields(error);
     console.error("WhatsApp send failed:", error);
-    return { success: false, reason: "send_failed", error };
+    return {
+      success: false,
+      reason: "send_failed",
+      twilioCode: code,
+      twilioMessage: message,
+    };
   }
 }
 

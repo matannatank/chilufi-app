@@ -143,17 +143,38 @@ export async function POST(req: NextRequest) {
       failed: 0,
       skipped: true,
       reason: "twilio_not_configured",
-      recipients: recipients.length,
+      recipientCount: recipients.length,
     });
   }
 
+  const withPhone = recipients.filter((r) => r.phone.trim().length > 0);
+  const skippedNoPhone = recipients.length - withPhone.length;
+
   const message = buildMessage(body.type, offer);
   const results = await Promise.all(
-    recipients.map((recipient) => sendWhatsApp(recipient.phone, message)),
+    withPhone.map((recipient) => sendWhatsApp(recipient.phone, message)),
   );
 
   const sent = results.filter((result) => result.success).length;
   const failed = results.length - sent;
 
-  return NextResponse.json({ sent, failed, skipped: false });
+  const failures = results
+    .map((result, index) => ({ result, phoneSuffix: withPhone[index]?.phone.slice(-4) ?? "" }))
+    .filter(({ result }) => !result.success)
+    .map(({ result, phoneSuffix }) => ({
+      phoneSuffix,
+      reason: result.reason,
+      twilioCode: "twilioCode" in result ? result.twilioCode : undefined,
+      twilioMessage: "twilioMessage" in result ? result.twilioMessage : undefined,
+    }));
+
+  return NextResponse.json({
+    sent,
+    failed,
+    skipped: false,
+    recipientCount: recipients.length,
+    attempted: withPhone.length,
+    skippedNoPhone,
+    failures: failures.length > 0 ? failures : undefined,
+  });
 }

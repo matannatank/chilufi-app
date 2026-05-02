@@ -208,7 +208,7 @@ export function PushSubscribe() {
     <div
       role="region"
       aria-label="התראות דחיפה"
-      className="fixed inset-x-4 bottom-[max(5.5rem,env(safe-area-inset-bottom,0px)+4.5rem)] z-[100] mx-auto max-w-md rounded-xl border border-zinc-200 bg-white p-4 shadow-xl"
+      className="fixed inset-x-4 bottom-[max(5.5rem,env(safe-area-inset-bottom,0px)+4.5rem)] z-[100] mx-auto max-w-md rounded-xl border border-zinc-300 bg-zinc-50 p-4 shadow-xl"
     >
       {variant === "ios-hint" ? (
         <>
@@ -232,10 +232,10 @@ export function PushSubscribe() {
           <p className="text-sm font-semibold text-zinc-900">התראות דחיפה לא מופעלות</p>
           <p className="mt-1 text-xs text-zinc-600">
             חסרים מפתחות VAPID בשרת (Vercel). הוסיפו את{" "}
-            <code className="rounded bg-zinc-100 px-1">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code>,{" "}
-            <code className="rounded bg-zinc-100 px-1">VAPID_PRIVATE_KEY</code> ו־
-            <code className="rounded bg-zinc-100 px-1">VAPID_SUBJECT</code> לפי{" "}
-            <code className="rounded bg-zinc-100 px-1">.env.local.example</code>, ואז Deploy מחדש.
+            <code className="rounded bg-zinc-200/80 px-1">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code>,{" "}
+            <code className="rounded bg-zinc-200/80 px-1">VAPID_PRIVATE_KEY</code> ו־
+            <code className="rounded bg-zinc-200/80 px-1">VAPID_SUBJECT</code> לפי{" "}
+            <code className="rounded bg-zinc-200/80 px-1">.env.local.example</code>, ואז Deploy מחדש.
           </p>
           <button
             type="button"

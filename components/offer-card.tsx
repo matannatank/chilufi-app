@@ -45,7 +45,7 @@ export function OfferCard({
   return (
     <Link
       href={`/offer/${id}`}
-      className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300"
+      className="flex flex-col gap-3 rounded-xl border border-zinc-300 bg-zinc-50 p-4 shadow-sm transition hover:border-zinc-400"
     >
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -54,7 +54,7 @@ export function OfferCard({
             {trimTime(startTime)} - {trimTime(endTime)}
           </p>
         </div>
-        <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-700">
+        <span className="rounded-full bg-zinc-200/90 px-2 py-1 text-xs text-zinc-800">
           {LOCATION_LABELS[location]}
         </span>
       </div>

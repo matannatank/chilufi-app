@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "מערכת לניהול חילופי משמרות לכבאים",
     start_url: "/",
     display: "standalone",
-    background_color: "#fafafa",
+    background_color: "#f4f4f5",
     theme_color: "#18181b",
     orientation: "portrait",
     lang: "he",

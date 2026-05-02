@@ -76,7 +76,7 @@ export default async function HomePage() {
   });
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-50 p-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">חילופי</h1>
         <div className="flex items-center gap-2">
@@ -87,15 +87,20 @@ export default async function HomePage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1 text-sm">
-        <div className="rounded-lg bg-white px-3 py-2 text-center font-semibold">הצעות פתוחות</div>
-        <Link href="/offer/new" className="rounded-lg px-3 py-2 text-center text-zinc-600">
+      <div className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-200/80 p-1 text-sm">
+        <div className="rounded-lg bg-zinc-50 px-3 py-2 text-center font-semibold text-zinc-900 shadow-sm">
+          הצעות פתוחות
+        </div>
+        <Link
+          href="/offer/new"
+          className="rounded-lg px-3 py-2 text-center text-zinc-600 transition hover:bg-zinc-300/50"
+        >
           חדשה
         </Link>
       </div>
 
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-lg border border-red-300/90 bg-red-100/90 p-3 text-sm text-red-900">
           שגיאה בטעינת ההצעות. נסה לרענן.
         </div>
       ) : null}
@@ -130,7 +135,7 @@ export default async function HomePage() {
             );
           })
         ) : (
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-600">
+          <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-6 text-center text-sm text-zinc-600 shadow-sm">
             אין הצעות פתוחות כרגע
           </div>
         )}

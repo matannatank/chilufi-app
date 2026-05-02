@@ -13,7 +13,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 mt-auto grid grid-cols-3 gap-2 rounded-xl border border-zinc-200 bg-white p-2">
+    <nav className="sticky bottom-0 mt-auto grid grid-cols-3 gap-2 rounded-xl border border-zinc-300 bg-zinc-50 p-2 shadow-sm">
       {NAV_ITEMS.map((item) => {
         const isActive = pathname === item.href;
         return (
@@ -21,7 +21,7 @@ export function BottomNav() {
             key={item.href}
             href={item.href}
             className={`rounded-lg px-3 py-2 text-center text-sm font-medium transition ${
-              isActive ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+              isActive ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-200/70"
             }`}
           >
             {item.label}

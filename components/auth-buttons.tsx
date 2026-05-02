@@ -18,14 +18,14 @@ export function AuthButtons() {
       <button
         type="button"
         onClick={handleGoogleSignIn}
-        className="h-12 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700"
+        className="h-12 rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800"
       >
         התחבר עם Google
       </button>
       <button
         type="button"
         disabled
-        className="h-12 rounded-xl border border-zinc-300 px-4 text-sm font-semibold text-zinc-500"
+        className="h-12 rounded-xl border border-zinc-400 bg-zinc-50 px-4 text-sm font-semibold text-zinc-600"
       >
         התחבר עם Apple (בקרוב)
       </button>

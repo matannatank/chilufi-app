@@ -84,7 +84,7 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
           value={shiftDate}
           onChange={(event) => setShiftDate(event.target.value)}
           min={new Date().toISOString().split("T")[0]}
-          className="h-11 rounded-lg border border-zinc-300 px-3 text-sm"
+          className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
           required
         />
       </label>
@@ -96,7 +96,7 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
             type="time"
             value={startTime}
             onChange={(event) => setStartTime(event.target.value)}
-            className="h-11 rounded-lg border border-zinc-300 px-3 text-sm"
+            className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
             required
           />
         </label>
@@ -106,7 +106,7 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
             type="time"
             value={endTime}
             onChange={(event) => setEndTime(event.target.value)}
-            className="h-11 rounded-lg border border-zinc-300 px-3 text-sm"
+            className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
             required
           />
         </label>
@@ -118,7 +118,7 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
           {LOCATION_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50/80 px-3 py-2 text-sm"
             >
               <input
                 type="radio"
@@ -138,7 +138,7 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           rows={4}
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-zinc-400 bg-zinc-50 px-3 py-2 text-sm"
           placeholder="פרטים נוספים שחשוב לדעת"
         />
       </label>

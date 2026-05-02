@@ -21,12 +21,12 @@ export default async function ProfilePage() {
     .maybeSingle();
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-50 p-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">פרופיל</h1>
         <LogoutButton />
       </header>
-      <div className="rounded-xl border border-zinc-200 bg-white p-4">
+      <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-4 shadow-sm">
         <ProfileSetupForm
           userId={user.id}
           initialProfile={profile}

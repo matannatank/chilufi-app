@@ -83,7 +83,7 @@ export function ProfileSetupForm({
           type="text"
           value={fullName}
           onChange={(event) => setFullName(event.target.value)}
-          className="h-11 rounded-lg border border-zinc-300 px-3 text-sm"
+          className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
           placeholder="לדוגמה: מתן כחלון"
           required
         />
@@ -95,7 +95,7 @@ export function ProfileSetupForm({
           type="tel"
           value={phone}
           onChange={(event) => setPhone(event.target.value.replace(/\D/g, ""))}
-          className="h-11 rounded-lg border border-zinc-300 px-3 text-sm"
+          className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
           placeholder="05XXXXXXXX"
           maxLength={10}
           required
@@ -108,7 +108,7 @@ export function ProfileSetupForm({
           {ROLE_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50/80 px-3 py-2 text-sm"
             >
               <input
                 type="radio"
@@ -123,7 +123,7 @@ export function ProfileSetupForm({
         </div>
       </fieldset>
 
-      <label className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-sm">
+      <label className="flex items-center justify-between rounded-lg border border-zinc-300 bg-zinc-50/80 px-3 py-2 text-sm">
         סחומ
         <input
           type="checkbox"
@@ -132,7 +132,7 @@ export function ProfileSetupForm({
         />
       </label>
 
-      <label className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-sm">
+      <label className="flex items-center justify-between rounded-lg border border-zinc-300 bg-zinc-50/80 px-3 py-2 text-sm">
         רישיון נהיגה
         <input
           type="checkbox"

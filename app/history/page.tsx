@@ -45,7 +45,7 @@ export default async function HistoryPage() {
   const offers = (offersRaw ?? []) as HistoryOffer[];
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-50 p-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">היסטוריה</h1>
         <LogoutButton />
@@ -59,7 +59,7 @@ export default async function HistoryPage() {
 
       <section className="flex flex-col gap-3">
         {offers.length === 0 ? (
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-600">
+          <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-6 text-center text-sm text-zinc-600 shadow-sm">
             אין היסטוריית חילופים
           </div>
         ) : (
@@ -70,7 +70,7 @@ export default async function HistoryPage() {
             return (
               <article
                 key={offer.id}
-                className="rounded-xl border border-zinc-200 bg-white p-4 text-sm"
+                className="rounded-xl border border-zinc-300 bg-zinc-50 p-4 text-sm shadow-sm"
               >
                 <p className="font-semibold">
                   {offer.shift_date} | {trimTime(offer.start_time)} -{" "}
@@ -78,7 +78,7 @@ export default async function HistoryPage() {
                 </p>
                 <p className="mt-1 text-zinc-600">{LOCATION_LABELS[offer.location]}</p>
                 <p className="mt-1 text-zinc-600">מציע: {poster?.full_name ?? "לא ידוע"}</p>
-                <span className="mt-2 inline-block rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-700">
+                <span className="mt-2 inline-block rounded-full bg-zinc-200/90 px-2 py-1 text-xs text-zinc-800">
                   {STATUS_LABELS[offer.status]}
                 </span>
               </article>

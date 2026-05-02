@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* פחות "לבן קליני" — רקע עמוד רך (בערך zinc-100) */
+  --background: #f4f4f5;
+  --foreground: #18181b;
 }
 
 @theme inline {
@@ -13,8 +14,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #27272a;
+    --foreground: #f4f4f5;
   }
 }
 

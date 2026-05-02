@@ -99,9 +99,9 @@ export default async function OfferDetailsPage({ params }: OfferDetailsPageProps
     });
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 p-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6">
       <h1 className="text-2xl font-bold">פרטי הצעה</h1>
-      <div className="rounded-xl border border-zinc-200 bg-white p-4">
+      <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-4 shadow-sm">
         <p className="text-sm text-zinc-700">תאריך: {offer.shift_date}</p>
         <p className="text-sm text-zinc-700">
           שעות: {trimTime(offer.start_time)} - {trimTime(offer.end_time)}
@@ -115,7 +115,7 @@ export default async function OfferDetailsPage({ params }: OfferDetailsPageProps
           תפקיד: {poster?.role ? ROLE_LABELS[poster.role] : "לא ידוע"}
         </p>
         {offer.notes ? (
-          <p className="mt-2 rounded-lg bg-zinc-50 p-2 text-sm text-zinc-700">
+          <p className="mt-2 rounded-lg border border-zinc-200/80 bg-zinc-200/40 p-2 text-sm text-zinc-800">
             הערות: {offer.notes}
           </p>
         ) : null}
@@ -132,7 +132,7 @@ export default async function OfferDetailsPage({ params }: OfferDetailsPageProps
             : null
         }
       />
-      <Link href="/home" className="text-sm font-medium text-blue-700">
+      <Link href="/home" className="text-sm font-medium text-blue-800 hover:text-blue-900">
         חזרה לבית
       </Link>
     </main>

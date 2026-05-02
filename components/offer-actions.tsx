@@ -159,7 +159,7 @@ export function OfferActions({
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4">
+    <section className="flex flex-col gap-3 rounded-xl border border-zinc-300 bg-zinc-50 p-4 shadow-sm">
       <h2 className="text-sm font-semibold">פעולות</h2>
 
       {isPoster ? (
@@ -186,7 +186,7 @@ export function OfferActions({
                 pendingApplicants.map((applicant) => (
                   <div
                     key={applicant.applicationId}
-                    className="rounded-lg border border-zinc-200 p-3"
+                    className="rounded-lg border border-zinc-300 bg-zinc-100/80 p-3"
                   >
                     <p className="text-sm font-medium">{applicant.fullName}</p>
                     <p className="text-xs text-zinc-600">
@@ -241,7 +241,7 @@ export function OfferActions({
           ) : null}
 
           {userApplication?.status === "chosen" ? (
-            <div className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
+            <div className="rounded-lg border border-emerald-200/90 bg-emerald-100/90 p-3 text-sm font-semibold text-emerald-900">
               נבחרת לחילוף הזה! תאם עם המפקד
             </div>
           ) : null}

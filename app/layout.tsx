@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Rubik } from "next/font/google";
+import { PushSubscribe } from "@/components/push-subscribe";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -10,6 +11,16 @@ const rubik = Rubik({
 export const metadata: Metadata = {
   title: "חילופי",
   description: "מערכת לניהול חילופי משמרות לכבאים",
+  applicationName: "חילופי",
+  appleWebApp: {
+    capable: true,
+    title: "חילופי",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#18181b",
 };
 
 export default function RootLayout({
@@ -23,7 +34,10 @@ export default function RootLayout({
       dir="rtl"
       className={`${rubik.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <PushSubscribe />
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { buildMessage } from "@/lib/messages";
+import { sendWebPushForOfferEvent, isWebPushConfigured } from "@/lib/push-send";
 import { isTwilioConfigured, sendWhatsApp } from "@/lib/twilio";
 import type { Location, UserRole } from "@/types";
 
@@ -10,6 +11,8 @@ type NotifyType =
   | "chosen"
   | "cancelled_w_app"
   | "cancelled_after_match";
+
+type Recipient = { phone: string; name: string; userId: string };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -25,10 +28,13 @@ const supabaseAdmin = serviceRoleKey
 export async function POST(req: NextRequest) {
   if (!supabaseAdmin) {
     return NextResponse.json({
-      sent: 0,
-      failed: 0,
-      skipped: true,
-      reason: "missing_service_role_key",
+      whatsapp: {
+        sent: 0,
+        failed: 0,
+        skipped: true,
+        reason: "missing_service_role_key",
+      },
+      push: { skipped: true, reason: "missing_service_role_key", attempted: 0, sent: 0, failed: 0 },
     });
   }
 
@@ -75,7 +81,7 @@ export async function POST(req: NextRequest) {
     },
   };
 
-  let recipients: Array<{ phone: string; name: string }> = [];
+  let recipients: Recipient[] = [];
 
   switch (body.type) {
     case "new_offer": {
@@ -84,17 +90,27 @@ export async function POST(req: NextRequest) {
         .select("phone, full_name, id")
         .neq("id", offerRow.poster_id);
       recipients =
-        users?.map((user) => ({ phone: user.phone, name: user.full_name })) ?? [];
+        users?.map((user) => ({
+          phone: user.phone,
+          name: user.full_name,
+          userId: user.id,
+        })) ?? [];
       break;
     }
     case "new_application": {
       const { data: posterProfile } = await supabaseAdmin
         .from("profiles")
-        .select("phone, full_name")
+        .select("phone, full_name, id")
         .eq("id", offerRow.poster_id)
         .single();
       if (posterProfile) {
-        recipients = [{ phone: posterProfile.phone, name: posterProfile.full_name }];
+        recipients = [
+          {
+            phone: posterProfile.phone,
+            name: posterProfile.full_name,
+            userId: posterProfile.id,
+          },
+        ];
       }
       break;
     }
@@ -103,11 +119,17 @@ export async function POST(req: NextRequest) {
       if (offerRow.chosen_applicant_id) {
         const { data: chosenProfile } = await supabaseAdmin
           .from("profiles")
-          .select("phone, full_name")
+          .select("phone, full_name, id")
           .eq("id", offerRow.chosen_applicant_id)
           .single();
         if (chosenProfile) {
-          recipients = [{ phone: chosenProfile.phone, name: chosenProfile.full_name }];
+          recipients = [
+            {
+              phone: chosenProfile.phone,
+              name: chosenProfile.full_name,
+              userId: chosenProfile.id,
+            },
+          ];
         }
       }
       break;
@@ -129,6 +151,7 @@ export async function POST(req: NextRequest) {
           profiles?.map((profile) => ({
             phone: profile.phone,
             name: profile.full_name,
+            userId: profile.id,
           })) ?? [];
       }
       break;
@@ -137,49 +160,66 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unknown notification type" }, { status: 400 });
   }
 
-  if (!isTwilioConfigured()) {
-    return NextResponse.json({
-      sent: 0,
-      failed: 0,
-      skipped: true,
-      reason: "twilio_not_configured",
-      recipientCount: recipients.length,
-    });
-  }
-
+  const message = buildMessage(body.type, offer);
   const withPhone = recipients.filter((r) => r.phone.trim().length > 0);
   const skippedNoPhone = recipients.length - withPhone.length;
 
-  const message = buildMessage(body.type, offer);
-  const results = await Promise.all(
-    withPhone.map((recipient) => sendWhatsApp(recipient.phone, message)),
-  );
+  let whatsappSent = 0;
+  let whatsappFailed = 0;
+  let failures:
+    | Array<{
+        phoneSuffix: string;
+        reason: string;
+        twilioCode?: number;
+        twilioMessage?: string;
+      }>
+    | undefined;
 
-  const sent = results.filter((result) => result.success).length;
-  const failed = results.length - sent;
+  if (isTwilioConfigured()) {
+    const results = await Promise.all(
+      withPhone.map((recipient) => sendWhatsApp(recipient.phone, message)),
+    );
+    whatsappSent = results.filter((result) => result.success).length;
+    whatsappFailed = results.length - whatsappSent;
+    const flat = results.flatMap((result, index) => {
+      if (result.success) {
+        return [];
+      }
+      const phoneSuffix = withPhone[index]?.phone.slice(-4) ?? "";
+      return [
+        {
+          phoneSuffix,
+          reason: result.reason,
+          twilioCode: result.twilioCode,
+          twilioMessage: result.twilioMessage,
+        },
+      ];
+    });
+    failures = flat.length > 0 ? flat : undefined;
+  }
 
-  const failures = results.flatMap((result, index) => {
-    if (result.success) {
-      return [];
-    }
-    const phoneSuffix = withPhone[index]?.phone.slice(-4) ?? "";
-    return [
-      {
-        phoneSuffix,
-        reason: result.reason,
-        twilioCode: result.twilioCode,
-        twilioMessage: result.twilioMessage,
-      },
-    ];
-  });
+  const recipientUserIds = recipients.map((r) => r.userId);
+  const pushResult = isWebPushConfigured()
+    ? await sendWebPushForOfferEvent(supabaseAdmin, body.type, offer, recipientUserIds)
+    : {
+        skipped: true as const,
+        reason: "web_push_not_configured" as const,
+        attempted: 0,
+        sent: 0,
+        failed: 0,
+      };
 
   return NextResponse.json({
-    sent,
-    failed,
-    skipped: false,
-    recipientCount: recipients.length,
-    attempted: withPhone.length,
-    skippedNoPhone,
-    failures: failures.length > 0 ? failures : undefined,
+    whatsapp: {
+      sent: whatsappSent,
+      failed: whatsappFailed,
+      skipped: !isTwilioConfigured(),
+      reason: !isTwilioConfigured() ? "twilio_not_configured" : undefined,
+      recipientCount: recipients.length,
+      attempted: isTwilioConfigured() ? withPhone.length : 0,
+      skippedNoPhone,
+      failures,
+    },
+    push: pushResult,
   });
 }

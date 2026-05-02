@@ -10,7 +10,7 @@ export type NotifyType =
   | "cancelled_w_app"
   | "cancelled_after_match";
 
-type MessageOffer = {
+export type NotifyMessageOffer = {
   id: string;
   shift_date: string;
   start_time: string;
@@ -24,7 +24,7 @@ type MessageOffer = {
   };
 };
 
-function buildSkillsString(profile: MessageOffer["poster"]) {
+function buildSkillsString(profile: NotifyMessageOffer["poster"]) {
   const parts: string[] = [];
   if (profile.has_hazmat) parts.push('סחומ');
   if (profile.has_license) parts.push("רישיון");
@@ -40,7 +40,7 @@ function formatDate(isoDate: string) {
   }).format(date);
 }
 
-export function buildMessage(type: NotifyType, offer: MessageOffer): string {
+export function buildMessage(type: NotifyType, offer: NotifyMessageOffer): string {
   const date = formatDate(offer.shift_date);
   const hours = `${offer.start_time.slice(0, 5)} - ${offer.end_time.slice(0, 5)}`;
   const location = LOCATION_LABELS[offer.location];
@@ -61,5 +61,52 @@ export function buildMessage(type: NotifyType, offer: MessageOffer): string {
       return `*הצעת חילוף בוטלה*\n${posterName} ביטל את ההצעה אליה נבחרת.\n${date}\n${location}`;
     default:
       return "עדכון מאפליקציית חילופי";
+  }
+}
+
+export function buildPushContent(
+  type: NotifyType,
+  offer: NotifyMessageOffer,
+): { title: string; body: string; url: string } {
+  const date = formatDate(offer.shift_date);
+  const hours = `${offer.start_time.slice(0, 5)} - ${offer.end_time.slice(0, 5)}`;
+  const location = LOCATION_LABELS[offer.location];
+  const posterName = offer.poster.full_name;
+  const skills = buildSkillsString(offer.poster);
+  const url = `${APP_URL}/offer/${offer.id}`;
+
+  switch (type) {
+    case "new_offer":
+      return {
+        title: "בקשת חילוף חדשה",
+        body: `${posterName}${skills} · ${location} · ${date} ${hours}`,
+        url,
+      };
+    case "new_application":
+      return {
+        title: "מועמד חדש להצעה שלך",
+        body: `${date} · ${location}`,
+        url,
+      };
+    case "chosen":
+      return {
+        title: "נבחרת לחילוף",
+        body: `${posterName} · ${date} ${hours} · ${location}`,
+        url,
+      };
+    case "cancelled_w_app":
+      return {
+        title: "הצעה בוטלה",
+        body: `${posterName} ביטל את ההצעה · ${date} · ${location}`,
+        url,
+      };
+    case "cancelled_after_match":
+      return {
+        title: "הצעה בוטלה",
+        body: `${posterName} ביטל את ההצעה · ${date} · ${location}`,
+        url,
+      };
+    default:
+      return { title: "חילופי", body: "עדכון חדש", url: APP_URL };
   }
 }

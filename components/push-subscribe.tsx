@@ -5,6 +5,9 @@ import { createClient } from "@/utils/supabase/client";
 
 const DISMISS_PERMISSION = "chilufi-push-dismiss-perm";
 const DISMISS_IOS_HINT = "chilufi-push-dismiss-ios-hint";
+const DISMISS_NO_VAPID = "chilufi-push-dismiss-no-vapid";
+
+type BannerVariant = "ios-hint" | "need-vapid" | "prompt" | null;
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -30,29 +33,64 @@ function isStandaloneDisplay(): boolean {
 }
 
 export function PushSubscribe() {
-  const [visible, setVisible] = useState(false);
-  const [blockedHint, setBlockedHint] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [variant, setVariant] = useState<BannerVariant>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapid || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+    if (!("serviceWorker" in navigator)) {
       return;
     }
 
+    const supabase = createClient();
     let cancelled = false;
 
-    (async () => {
-      const supabase = createClient();
+    const run = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (cancelled || !session) {
+      if (cancelled) return;
+
+      if (!session) {
+        setOpen(false);
+        setVariant(null);
         return;
       }
 
       if (typeof Notification === "undefined") {
+        setOpen(false);
+        setVariant(null);
+        return;
+      }
+
+      // אייפון: ב-Safari רגיל אין Web Push — חייבים התקנה למסך הבית (גם בלי PushManager / לפני VAPID)
+      if (isIos() && !isStandaloneDisplay()) {
+        if (sessionStorage.getItem(DISMISS_IOS_HINT) === "1") {
+          setOpen(false);
+          setVariant(null);
+          return;
+        }
+        setVariant("ios-hint");
+        setOpen(true);
+        return;
+      }
+
+      const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+      if (!vapid) {
+        if (sessionStorage.getItem(DISMISS_NO_VAPID) === "1") {
+          setOpen(false);
+          setVariant(null);
+          return;
+        }
+        setVariant("need-vapid");
+        setOpen(true);
+        return;
+      }
+
+      if (!("PushManager" in window)) {
+        setOpen(false);
+        setVariant(null);
         return;
       }
 
@@ -67,7 +105,6 @@ export function PushSubscribe() {
               applicationServerKey: urlBase64ToUint8Array(vapid),
             });
           }
-          // תמיד לסנכרן לשרת: אחרי טבלה חדשה, כשלי רשת קודמים, או מכשיר חדש — אחרת לא יגיעו Push.
           if (sub) {
             await fetch("/api/push/subscribe", {
               method: "POST",
@@ -76,48 +113,57 @@ export function PushSubscribe() {
             });
           }
         } catch {
-          // silent — push is optional
+          // Push אופציונלי
         }
+        setOpen(false);
+        setVariant(null);
         return;
       }
 
       if (Notification.permission === "denied") {
-        return;
-      }
-
-      if (isIos() && !isStandaloneDisplay()) {
-        if (sessionStorage.getItem(DISMISS_IOS_HINT) === "1") {
-          return;
-        }
-        setBlockedHint(true);
-        setVisible(true);
+        setOpen(false);
+        setVariant(null);
         return;
       }
 
       if (sessionStorage.getItem(DISMISS_PERMISSION) === "1") {
+        setOpen(false);
+        setVariant(null);
         return;
       }
 
-      setVisible(true);
-    })();
+      setVariant("prompt");
+      setOpen(true);
+    };
+
+    void run();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void run();
+    });
 
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, []);
 
   const dismiss = () => {
-    if (blockedHint) {
+    if (variant === "ios-hint") {
       sessionStorage.setItem(DISMISS_IOS_HINT, "1");
-    } else {
+    } else if (variant === "need-vapid") {
+      sessionStorage.setItem(DISMISS_NO_VAPID, "1");
+    } else if (variant === "prompt") {
       sessionStorage.setItem(DISMISS_PERMISSION, "1");
     }
-    setVisible(false);
-    setBlockedHint(false);
+    setOpen(false);
+    setVariant(null);
   };
 
   const enable = async () => {
-    const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
     if (!vapid) return;
 
     setBusy(true);
@@ -146,15 +192,15 @@ export function PushSubscribe() {
         return;
       }
 
-      setVisible(false);
-      setBlockedHint(false);
+      setOpen(false);
+      setVariant(null);
     } catch {
       setBusy(false);
     }
     setBusy(false);
   };
 
-  if (!visible) {
+  if (!open || !variant) {
     return null;
   }
 
@@ -162,21 +208,51 @@ export function PushSubscribe() {
     <div
       role="region"
       aria-label="התראות דחיפה"
-      className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md rounded-xl border border-zinc-200 bg-white p-4 shadow-lg"
+      className="fixed inset-x-4 bottom-[max(5.5rem,env(safe-area-inset-bottom,0px)+4.5rem)] z-[100] mx-auto max-w-md rounded-xl border border-zinc-200 bg-white p-4 shadow-xl"
     >
-      {blockedHint ? (
+      {variant === "ios-hint" ? (
         <>
           <p className="text-sm font-semibold text-zinc-900">התראות באייפון</p>
           <p className="mt-1 text-xs text-zinc-600">
-            בשביל התראות דחיפה יש להתקין את האתר למסך הבית: ב-Safari לחצו שיתוף → הוסף למסך הבית,
-            ואז פתחו את האפליקציה משם והפעילו התראות.
+            Web Push עובד באייפון רק כשהאתר מותקן כאפליקציה: ב-Safari לחצו שיתוף → הוסף למסך הבית,
+            ואז פתחו מהאייקון החדש והפעילו התראות.
           </p>
+          <button
+            type="button"
+            onClick={dismiss}
+            className="mt-3 w-full text-center text-xs text-zinc-500 underline"
+          >
+            סגור
+          </button>
         </>
-      ) : (
+      ) : null}
+
+      {variant === "need-vapid" ? (
+        <>
+          <p className="text-sm font-semibold text-zinc-900">התראות דחיפה לא מופעלות</p>
+          <p className="mt-1 text-xs text-zinc-600">
+            חסרים מפתחות VAPID בשרת (Vercel). הוסיפו את{" "}
+            <code className="rounded bg-zinc-100 px-1">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code>,{" "}
+            <code className="rounded bg-zinc-100 px-1">VAPID_PRIVATE_KEY</code> ו־
+            <code className="rounded bg-zinc-100 px-1">VAPID_SUBJECT</code> לפי{" "}
+            <code className="rounded bg-zinc-100 px-1">.env.local.example</code>, ואז Deploy מחדש.
+          </p>
+          <button
+            type="button"
+            onClick={dismiss}
+            className="mt-3 w-full text-center text-xs text-zinc-500 underline"
+          >
+            סגור
+          </button>
+        </>
+      ) : null}
+
+      {variant === "prompt" ? (
         <>
           <p className="text-sm font-semibold text-zinc-900">הפעלת התראות</p>
           <p className="mt-1 text-xs text-zinc-600">
-            קבלו עדכונים על הצעות חדשות ומועמדויות — בנוסף לוואטסאפ.
+            קבלו עדכונים על הצעות ומועמדויות — בנוסף לוואטסאפ. אחרי לחיצה על הכפתור למטה אמור להופיע חלון
+            מערכת לאישור התראות.
           </p>
           <div className="mt-3 flex gap-2">
             <button
@@ -196,16 +272,6 @@ export function PushSubscribe() {
             </button>
           </div>
         </>
-      )}
-
-      {blockedHint ? (
-        <button
-          type="button"
-          onClick={dismiss}
-          className="mt-3 w-full text-center text-xs text-zinc-500 underline"
-        >
-          סגור
-        </button>
       ) : null}
     </div>
   );

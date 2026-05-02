@@ -39,17 +39,26 @@ export async function sendWebPushForOfferEvent(
 ): Promise<{
   skipped: boolean;
   reason?: string;
+  targetUserCount: number;
   attempted: number;
   sent: number;
   failed: number;
+  loadFailed?: boolean;
 }> {
   if (!isWebPushConfigured() || !ensureVapid()) {
-    return { skipped: true, reason: "web_push_not_configured", attempted: 0, sent: 0, failed: 0 };
+    return {
+      skipped: true,
+      reason: "web_push_not_configured",
+      targetUserCount: 0,
+      attempted: 0,
+      sent: 0,
+      failed: 0,
+    };
   }
 
   const uniqueIds = [...new Set(recipientUserIds.filter(Boolean))];
   if (uniqueIds.length === 0) {
-    return { skipped: false, attempted: 0, sent: 0, failed: 0 };
+    return { skipped: false, targetUserCount: 0, attempted: 0, sent: 0, failed: 0 };
   }
 
   const { title, body, url } = buildPushContent(notifyType, offer);
@@ -64,9 +73,11 @@ export async function sendWebPushForOfferEvent(
     console.error("push_subscriptions load failed:", error);
     return {
       skipped: false,
+      targetUserCount: uniqueIds.length,
       attempted: 0,
       sent: 0,
       failed: 0,
+      loadFailed: true,
     };
   }
 
@@ -105,6 +116,7 @@ export async function sendWebPushForOfferEvent(
 
   return {
     skipped: false,
+    targetUserCount: uniqueIds.length,
     attempted: subscriptions.length,
     sent,
     failed,

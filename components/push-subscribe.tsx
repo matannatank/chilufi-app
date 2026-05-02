@@ -60,12 +60,15 @@ export function PushSubscribe() {
         try {
           const reg = await navigator.serviceWorker.register("/sw.js");
           await reg.update();
-          const existing = await reg.pushManager.getSubscription();
-          if (!existing) {
-            const sub = await reg.pushManager.subscribe({
+          let sub = await reg.pushManager.getSubscription();
+          if (!sub) {
+            sub = await reg.pushManager.subscribe({
               userVisibleOnly: true,
               applicationServerKey: urlBase64ToUint8Array(vapid),
             });
+          }
+          // תמיד לסנכרן לשרת: אחרי טבלה חדשה, כשלי רשת קודמים, או מכשיר חדש — אחרת לא יגיעו Push.
+          if (sub) {
             await fetch("/api/push/subscribe", {
               method: "POST",
               headers: { "Content-Type": "application/json" },

@@ -34,7 +34,14 @@ export async function POST(req: NextRequest) {
         skipped: true,
         reason: "missing_service_role_key",
       },
-      push: { skipped: true, reason: "missing_service_role_key", attempted: 0, sent: 0, failed: 0 },
+      push: {
+        skipped: true,
+        reason: "missing_service_role_key",
+        targetUserCount: 0,
+        attempted: 0,
+        sent: 0,
+        failed: 0,
+      },
     });
   }
 
@@ -204,6 +211,7 @@ export async function POST(req: NextRequest) {
     : {
         skipped: true as const,
         reason: "web_push_not_configured" as const,
+        targetUserCount: 0,
         attempted: 0,
         sent: 0,
         failed: 0,

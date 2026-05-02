@@ -45,21 +45,21 @@ export default async function HistoryPage() {
   const offers = (offersRaw ?? []) as HistoryOffer[];
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6 text-zinc-900">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">היסטוריה</h1>
+        <h1 className="text-2xl font-bold text-zinc-950">היסטוריה</h1>
         <LogoutButton />
       </header>
 
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-lg border border-red-300/90 bg-red-100/90 p-3 text-sm font-medium text-red-900">
           שגיאה בטעינת ההיסטוריה. נסה שוב.
         </div>
       ) : null}
 
       <section className="flex flex-col gap-3">
         {offers.length === 0 ? (
-          <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-6 text-center text-sm text-zinc-600 shadow-sm">
+          <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-6 text-center text-sm font-medium text-zinc-700 shadow-sm">
             אין היסטוריית חילופים
           </div>
         ) : (
@@ -76,8 +76,8 @@ export default async function HistoryPage() {
                   {offer.shift_date} | {trimTime(offer.start_time)} -{" "}
                   {trimTime(offer.end_time)}
                 </p>
-                <p className="mt-1 text-zinc-600">{LOCATION_LABELS[offer.location]}</p>
-                <p className="mt-1 text-zinc-600">מציע: {poster?.full_name ?? "לא ידוע"}</p>
+                <p className="mt-1 text-zinc-700">{LOCATION_LABELS[offer.location]}</p>
+                <p className="mt-1 text-zinc-700">מציע: {poster?.full_name ?? "לא ידוע"}</p>
                 <span className="mt-2 inline-block rounded-full bg-zinc-200/90 px-2 py-1 text-xs text-zinc-800">
                   {STATUS_LABELS[offer.status]}
                 </span>

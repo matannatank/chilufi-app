@@ -12,11 +12,20 @@
   --font-sans: var(--font-rubik);
 }
 
+/*
+  אין עדיין ערכת "מצב כהה" מלאה ב־UI. כשהמערכת במצב כהה, הטקסט היה נהיה בהיר
+  בעוד הרקעות בטלווינד נשארים בהירים — במובייל התוויות כמעט נעלמו.
+  נשארים על אותה פלטה עד שיהיה dark mode אמיתי.
+*/
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #27272a;
-    --foreground: #f4f4f5;
+    --background: #f4f4f5;
+    --foreground: #18181b;
   }
+}
+
+html {
+  color-scheme: light;
 }
 
 body {

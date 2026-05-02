@@ -76,9 +76,9 @@ export default async function HomePage() {
   });
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6 text-zinc-900">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">חילופי</h1>
+        <h1 className="text-2xl font-bold text-zinc-950">חילופי</h1>
         <div className="flex items-center gap-2">
           <Link href="/offer/new" className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white">
             הצעה חדשה +

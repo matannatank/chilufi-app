@@ -34,7 +34,7 @@ export default function RootLayout({
       dir="rtl"
       className={`${rubik.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col text-zinc-900">
         <PushSubscribe />
         {children}
       </body>

@@ -76,26 +76,26 @@ export function ProfileSetupForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5 text-zinc-900">
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium">שם מלא</span>
+        <span className="text-sm font-semibold text-zinc-900">שם מלא</span>
         <input
           type="text"
           value={fullName}
           onChange={(event) => setFullName(event.target.value)}
-          className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
+          className="h-11 rounded-lg border border-zinc-400 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-500"
           placeholder="לדוגמה: מתן כחלון"
           required
         />
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium">מספר טלפון (לוואטסאפ)</span>
+        <span className="text-sm font-semibold text-zinc-900">מספר טלפון (לוואטסאפ)</span>
         <input
           type="tel"
           value={phone}
           onChange={(event) => setPhone(event.target.value.replace(/\D/g, ""))}
-          className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
+          className="h-11 rounded-lg border border-zinc-400 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-500"
           placeholder="05XXXXXXXX"
           maxLength={10}
           required
@@ -103,12 +103,12 @@ export function ProfileSetupForm({
       </label>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium">תפקיד</legend>
+        <legend className="text-sm font-semibold text-zinc-900">תפקיד</legend>
         <div className="flex flex-col gap-2">
           {ROLE_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50/80 px-3 py-2 text-sm"
+              className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900"
             >
               <input
                 type="radio"
@@ -123,7 +123,7 @@ export function ProfileSetupForm({
         </div>
       </fieldset>
 
-      <label className="flex items-center justify-between rounded-lg border border-zinc-300 bg-zinc-50/80 px-3 py-2 text-sm">
+      <label className="flex items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900">
         סחומ
         <input
           type="checkbox"
@@ -132,7 +132,7 @@ export function ProfileSetupForm({
         />
       </label>
 
-      <label className="flex items-center justify-between rounded-lg border border-zinc-300 bg-zinc-50/80 px-3 py-2 text-sm">
+      <label className="flex items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900">
         רישיון נהיגה
         <input
           type="checkbox"
@@ -141,7 +141,7 @@ export function ProfileSetupForm({
         />
       </label>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm font-medium text-red-800">{error}</p> : null}
 
       <button
         type="submit"

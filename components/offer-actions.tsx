@@ -159,13 +159,13 @@ export function OfferActions({
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-zinc-300 bg-zinc-50 p-4 shadow-sm">
-      <h2 className="text-sm font-semibold">פעולות</h2>
+    <section className="flex flex-col gap-3 rounded-xl border border-zinc-300 bg-zinc-50 p-4 text-zinc-900 shadow-sm">
+      <h2 className="text-sm font-semibold text-zinc-950">פעולות</h2>
 
       {isPoster ? (
         <>
           {offerStatus === "cancelled" ? (
-            <p className="text-sm text-zinc-600">ההצעה בוטלה</p>
+            <p className="text-sm font-medium text-zinc-700">ההצעה בוטלה</p>
           ) : (
             <button
               type="button"
@@ -181,7 +181,7 @@ export function OfferActions({
             <div className="mt-2 flex flex-col gap-2">
               <p className="text-sm font-medium">מועמדים ({pendingApplicants.length})</p>
               {pendingApplicants.length === 0 ? (
-                <p className="text-sm text-zinc-600">עדיין אין מועמדים</p>
+                <p className="text-sm font-medium text-zinc-700">עדיין אין מועמדים</p>
               ) : (
                 pendingApplicants.map((applicant) => (
                   <div
@@ -189,7 +189,7 @@ export function OfferActions({
                     className="rounded-lg border border-zinc-300 bg-zinc-100/80 p-3"
                   >
                     <p className="text-sm font-medium">{applicant.fullName}</p>
-                    <p className="text-xs text-zinc-600">
+                    <p className="text-xs font-medium text-zinc-700">
                       {ROLE_LABELS[applicant.role]} |{" "}
                       {applicant.hasHazmat ? "סחומ" : "ללא סחומ"} |{" "}
                       {applicant.hasLicense ? "רישיון ✓" : "ללא רישיון"}
@@ -228,7 +228,7 @@ export function OfferActions({
 
           {offerStatus === "open" && userApplication?.status === "pending" ? (
             <>
-              <p className="text-sm text-zinc-700">הגשת מועמדות, ממתין לבחירה</p>
+              <p className="text-sm font-medium text-zinc-800">הגשת מועמדות, ממתין לבחירה</p>
               <button
                 type="button"
                 onClick={withdrawApplication}
@@ -247,16 +247,16 @@ export function OfferActions({
           ) : null}
 
           {offerStatus === "matched" && userApplication?.status !== "chosen" ? (
-            <p className="text-sm text-zinc-600">ההצעה כבר נסגרה</p>
+            <p className="text-sm font-medium text-zinc-700">ההצעה כבר נסגרה</p>
           ) : null}
 
           {offerStatus === "cancelled" ? (
-            <p className="text-sm text-zinc-600">ההצעה בוטלה</p>
+            <p className="text-sm font-medium text-zinc-700">ההצעה בוטלה</p>
           ) : null}
         </>
       )}
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm font-medium text-red-800">{error}</p> : null}
     </section>
   );
 }

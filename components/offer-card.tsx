@@ -50,7 +50,7 @@ export function OfferCard({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-zinc-900">{formatDate(shiftDate)}</p>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm font-medium text-zinc-700">
             {trimTime(startTime)} - {trimTime(endTime)}
           </p>
         </div>
@@ -59,24 +59,24 @@ export function OfferCard({
         </span>
       </div>
 
-      <div className="text-sm text-zinc-700">
-        <p className="font-medium">{posterName}</p>
-        <p className="text-xs text-zinc-600">
+      <div className="text-sm text-zinc-800">
+        <p className="font-semibold text-zinc-950">{posterName}</p>
+        <p className="text-xs font-medium text-zinc-700">
           {ROLE_LABELS[posterRole]} | {hasHazmat ? "סחומ" : "ללא סחומ"} |{" "}
           {hasLicense ? "רישיון ✓" : "ללא רישיון"}
         </p>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-zinc-600">
+      <div className="flex items-center justify-between text-xs font-medium text-zinc-700">
         <span>{applicantsCount} הגישו מועמדות</span>
         <div className="flex items-center gap-2">
           {isMine ? (
-            <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">
+            <span className="rounded-full border border-blue-200/80 bg-blue-100 px-2 py-1 text-blue-900">
               ההצעה שלך
             </span>
           ) : null}
           {iApplied ? (
-            <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">
+            <span className="rounded-full border border-emerald-200/80 bg-emerald-100 px-2 py-1 text-emerald-900">
               הגשת מועמדות
             </span>
           ) : null}

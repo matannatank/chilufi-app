@@ -76,49 +76,49 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-zinc-900">
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium">תאריך המשמרת</span>
+        <span className="text-sm font-semibold text-zinc-900">תאריך המשמרת</span>
         <input
           type="date"
           value={shiftDate}
           onChange={(event) => setShiftDate(event.target.value)}
           min={new Date().toISOString().split("T")[0]}
-          className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
+          className="h-11 rounded-lg border border-zinc-400 bg-white px-3 text-sm text-zinc-900"
           required
         />
       </label>
 
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">שעת התחלה</span>
+          <span className="text-sm font-semibold text-zinc-900">שעת התחלה</span>
           <input
             type="time"
             value={startTime}
             onChange={(event) => setStartTime(event.target.value)}
-            className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
+            className="h-11 rounded-lg border border-zinc-400 bg-white px-3 text-sm text-zinc-900"
             required
           />
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">שעת סיום</span>
+          <span className="text-sm font-semibold text-zinc-900">שעת סיום</span>
           <input
             type="time"
             value={endTime}
             onChange={(event) => setEndTime(event.target.value)}
-            className="h-11 rounded-lg border border-zinc-400 bg-zinc-50 px-3 text-sm"
+            className="h-11 rounded-lg border border-zinc-400 bg-white px-3 text-sm text-zinc-900"
             required
           />
         </label>
       </div>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium">מיקום</legend>
+        <legend className="text-sm font-semibold text-zinc-900">מיקום</legend>
         <div className="flex flex-col gap-2">
           {LOCATION_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50/80 px-3 py-2 text-sm"
+              className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900"
             >
               <input
                 type="radio"
@@ -133,17 +133,17 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
       </fieldset>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium">הערות (אופציונלי)</span>
+        <span className="text-sm font-semibold text-zinc-900">הערות (אופציונלי)</span>
         <textarea
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           rows={4}
-          className="rounded-lg border border-zinc-400 bg-zinc-50 px-3 py-2 text-sm"
+          className="rounded-lg border border-zinc-400 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500"
           placeholder="פרטים נוספים שחשוב לדעת"
         />
       </label>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm font-medium text-red-800">{error}</p> : null}
 
       <button
         type="submit"

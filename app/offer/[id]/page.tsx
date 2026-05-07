@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { LOCATION_LABELS, ROLE_LABELS, STATUS_LABELS } from "@/types";
+import { formatUserDisplay } from "@/lib/format";
+import { LOCATION_LABELS, STATUS_LABELS } from "@/types";
 import { OfferActions } from "@/components/offer-actions";
-import type { ApplicationStatus, Location, OfferStatus, UserRole } from "@/types";
+import type { ApplicationStatus, Location, OfferStatus, Shift, UserRole } from "@/types";
 
 type OfferDetailsPageProps = {
   params: Promise<{ id: string }>;
@@ -18,7 +19,24 @@ type OfferDetailsRow = {
   notes: string | null;
   status: OfferStatus;
   poster_id: string;
-  profiles: { full_name: string; role: UserRole } | Array<{ full_name: string; role: UserRole }> | null;
+  profiles:
+    | {
+        full_name: string;
+        role: UserRole;
+        shift: Shift | null;
+        has_hazmat: boolean;
+        has_license: boolean;
+        has_crane: boolean;
+      }
+    | Array<{
+        full_name: string;
+        role: UserRole;
+        shift: Shift | null;
+        has_hazmat: boolean;
+        has_license: boolean;
+        has_crane: boolean;
+      }>
+    | null;
 };
 
 type OfferApplicationRow = {
@@ -29,14 +47,18 @@ type OfferApplicationRow = {
     | {
         full_name: string;
         role: UserRole;
+        shift: Shift | null;
         has_hazmat: boolean;
         has_license: boolean;
+        has_crane: boolean;
       }
     | Array<{
         full_name: string;
         role: UserRole;
+        shift: Shift | null;
         has_hazmat: boolean;
         has_license: boolean;
+        has_crane: boolean;
       }>
     | null;
 };
@@ -58,7 +80,7 @@ export default async function OfferDetailsPage({ params }: OfferDetailsPageProps
   const { data: offerRaw } = await supabase
     .from("swap_offers")
     .select(
-      "id, shift_date, start_time, end_time, location, notes, status, poster_id, profiles!swap_offers_poster_id_fkey(full_name, role)",
+      "id, shift_date, start_time, end_time, location, notes, status, poster_id, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -74,7 +96,7 @@ export default async function OfferDetailsPage({ params }: OfferDetailsPageProps
   const { data: applicationsRaw } = await supabase
     .from("applications")
     .select(
-      "id, applicant_id, status, profiles!applications_applicant_id_fkey(full_name, role, has_hazmat, has_license)",
+      "id, applicant_id, status, profiles!applications_applicant_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
     )
     .eq("offer_id", offer.id);
 
@@ -93,8 +115,10 @@ export default async function OfferDetailsPage({ params }: OfferDetailsPageProps
         applicantId: application.applicant_id,
         fullName: applicant?.full_name ?? "לא ידוע",
         role: applicant?.role ?? "fighter",
+        shift: applicant?.shift ?? null,
         hasHazmat: applicant?.has_hazmat ?? false,
         hasLicense: applicant?.has_license ?? false,
+        hasCrane: applicant?.has_crane ?? false,
       };
     });
 
@@ -108,11 +132,17 @@ export default async function OfferDetailsPage({ params }: OfferDetailsPageProps
         </p>
         <p className="text-sm font-medium text-zinc-800">מיקום: {LOCATION_LABELS[offer.location]}</p>
         <p className="text-sm font-medium text-zinc-800">סטטוס: {STATUS_LABELS[offer.status]}</p>
-        <p className="mt-2 text-sm font-semibold text-zinc-950">
-          מציע: {poster?.full_name ?? "לא ידוע"}
-        </p>
-        <p className="text-xs font-medium text-zinc-700">
-          תפקיד: {poster?.role ? ROLE_LABELS[poster.role] : "לא ידוע"}
+        <p className="mt-2 text-xs font-medium text-zinc-700">
+          {poster
+            ? formatUserDisplay({
+                full_name: poster.full_name,
+                role: poster.role,
+                shift: poster.shift,
+                has_hazmat: poster.has_hazmat,
+                has_license: poster.has_license,
+                has_crane: poster.has_crane,
+              })
+            : "לא ידוע"}
         </p>
         {offer.notes ? (
           <p className="mt-2 rounded-lg border border-zinc-200/80 bg-zinc-200/40 p-2 text-sm text-zinc-800">

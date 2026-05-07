@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { LOCATION_LABELS, ROLE_LABELS } from "@/types";
-import type { Location, UserRole } from "@/types";
+import { LOCATION_LABELS } from "@/types";
+import { formatUserDisplay } from "@/lib/format";
+import type { Location, Shift, UserRole } from "@/types";
 
 type OfferCardProps = {
   id: string;
@@ -10,8 +11,10 @@ type OfferCardProps = {
   location: Location;
   posterName: string;
   posterRole: UserRole;
+  posterShift: Shift | null;
   hasHazmat: boolean;
   hasLicense: boolean;
+  hasCrane: boolean;
   applicantsCount: number;
   isMine: boolean;
   iApplied: boolean;
@@ -36,8 +39,10 @@ export function OfferCard({
   location,
   posterName,
   posterRole,
+  posterShift,
   hasHazmat,
   hasLicense,
+  hasCrane,
   applicantsCount,
   isMine,
   iApplied,
@@ -60,10 +65,15 @@ export function OfferCard({
       </div>
 
       <div className="text-sm text-zinc-800">
-        <p className="font-semibold text-zinc-950">{posterName}</p>
         <p className="text-xs font-medium text-zinc-700">
-          {ROLE_LABELS[posterRole]} | {hasHazmat ? "סחומ" : "ללא סחומ"} |{" "}
-          {hasLicense ? "רישיון ✓" : "ללא רישיון"}
+          {formatUserDisplay({
+            full_name: posterName,
+            role: posterRole,
+            shift: posterShift,
+            has_hazmat: hasHazmat,
+            has_license: hasLicense,
+            has_crane: hasCrane,
+          })}
         </p>
       </div>
 

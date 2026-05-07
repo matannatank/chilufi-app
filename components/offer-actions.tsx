@@ -3,16 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { ROLE_LABELS } from "@/types";
-import type { ApplicationStatus, OfferStatus, UserRole } from "@/types";
+import { formatUserDisplay } from "@/lib/format";
+import type { ApplicationStatus, OfferStatus, Shift, UserRole } from "@/types";
 
 type PendingApplicant = {
   applicationId: string;
   applicantId: string;
   fullName: string;
   role: UserRole;
+  shift: Shift | null;
   hasHazmat: boolean;
   hasLicense: boolean;
+  hasCrane: boolean;
 };
 
 type UserApplication = {
@@ -60,6 +62,20 @@ export function OfferActions({
 
     setError("");
     setIsSaving(true);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("shift")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (!profile?.shift) {
+      setIsSaving(false);
+      setError("עליך להגדיר משמרת בפרופיל לפני הגשת מועמדות");
+      router.push("/profile");
+      return;
+    }
+
     const { error: insertError } = await supabase.from("applications").insert({
       offer_id: offerId,
       applicant_id: userId,
@@ -190,9 +206,14 @@ export function OfferActions({
                   >
                     <p className="text-sm font-medium">{applicant.fullName}</p>
                     <p className="text-xs font-medium text-zinc-700">
-                      {ROLE_LABELS[applicant.role]} |{" "}
-                      {applicant.hasHazmat ? "סחומ" : "ללא סחומ"} |{" "}
-                      {applicant.hasLicense ? "רישיון ✓" : "ללא רישיון"}
+                      {formatUserDisplay({
+                        full_name: applicant.fullName,
+                        role: applicant.role,
+                        shift: applicant.shift,
+                        has_hazmat: applicant.hasHazmat,
+                        has_license: applicant.hasLicense,
+                        has_crane: applicant.hasCrane,
+                      })}
                     </p>
                     <button
                       type="button"

@@ -59,19 +59,20 @@ export const updateSession = async (request: NextRequest) => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("phone")
+    .select("phone, shift")
     .eq("id", user.id)
     .maybeSingle();
 
   const hasPhone = Boolean(profile?.phone?.trim());
+  const hasShift = Boolean(profile?.shift);
 
-  if (!hasPhone && !isProfileSetupRoute && !isAuthRoute) {
+  if ((!hasPhone || !hasShift) && !isProfileSetupRoute && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/profile/setup";
     return NextResponse.redirect(url);
   }
 
-  if (hasPhone && (isLoginRoute || isProfileSetupRoute)) {
+  if (hasPhone && hasShift && (isLoginRoute || isProfileSetupRoute)) {
     const url = request.nextUrl.clone();
     url.pathname = "/home";
     return NextResponse.redirect(url);

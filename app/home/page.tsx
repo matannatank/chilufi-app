@@ -4,7 +4,7 @@ import Link from "next/link";
 import { OfferCard } from "@/components/offer-card";
 import { BottomNav } from "@/components/bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
-import type { Location, UserRole } from "@/types";
+import type { Location, Shift, UserRole } from "@/types";
 
 type HomeOfferRow = {
   id: string;
@@ -17,14 +17,18 @@ type HomeOfferRow = {
     | {
         full_name: string;
         role: UserRole;
+        shift: Shift | null;
         has_hazmat: boolean;
         has_license: boolean;
+        has_crane: boolean;
       }
     | Array<{
         full_name: string;
         role: UserRole;
+        shift: Shift | null;
         has_hazmat: boolean;
         has_license: boolean;
+        has_crane: boolean;
       }>
     | null;
 };
@@ -44,7 +48,7 @@ export default async function HomePage() {
   const { data: offersRaw, error } = await supabase
     .from("swap_offers")
     .select(
-      "id, shift_date, start_time, end_time, location, poster_id, profiles!swap_offers_poster_id_fkey(full_name, role, has_hazmat, has_license)",
+      "id, shift_date, start_time, end_time, location, poster_id, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
     )
     .eq("status", "open")
     .gte("shift_date", today)
@@ -126,8 +130,10 @@ export default async function HomePage() {
                 location={offer.location}
                 posterName={poster.full_name}
                 posterRole={poster.role}
+                posterShift={poster.shift}
                 hasHazmat={poster.has_hazmat}
                 hasLicense={poster.has_license}
+                hasCrane={poster.has_crane}
                 applicantsCount={applicationByOffer.get(offer.id) ?? 0}
                 isMine={offer.poster_id === user.id}
                 iApplied={userAppliedOffers.has(offer.id)}

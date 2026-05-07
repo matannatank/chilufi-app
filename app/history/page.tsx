@@ -1,7 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { formatUserDisplay } from "@/lib/format";
 import { LOCATION_LABELS, STATUS_LABELS } from "@/types";
-import type { Location, OfferStatus } from "@/types";
+import type { Location, OfferStatus, Shift, UserRole } from "@/types";
 import { BottomNav } from "@/components/bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
 
@@ -16,8 +17,20 @@ type HistoryOffer = {
   profiles:
     | {
         full_name: string;
+        role: UserRole;
+        shift: Shift | null;
+        has_hazmat: boolean;
+        has_license: boolean;
+        has_crane: boolean;
       }
-    | Array<{ full_name: string }>
+    | Array<{
+        full_name: string;
+        role: UserRole;
+        shift: Shift | null;
+        has_hazmat: boolean;
+        has_license: boolean;
+        has_crane: boolean;
+      }>
     | null;
 };
 
@@ -36,7 +49,7 @@ export default async function HistoryPage() {
   const { data: offersRaw, error } = await supabase
     .from("swap_offers")
     .select(
-      "id, shift_date, start_time, end_time, location, status, updated_at, profiles!swap_offers_poster_id_fkey(full_name)",
+      "id, shift_date, start_time, end_time, location, status, updated_at, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
     )
     .in("status", ["matched", "cancelled"])
     .order("updated_at", { ascending: false })
@@ -77,7 +90,19 @@ export default async function HistoryPage() {
                   {trimTime(offer.end_time)}
                 </p>
                 <p className="mt-1 text-zinc-700">{LOCATION_LABELS[offer.location]}</p>
-                <p className="mt-1 text-zinc-700">מציע: {poster?.full_name ?? "לא ידוע"}</p>
+                <p className="mt-1 text-zinc-700">
+                  מציע:{" "}
+                  {poster
+                    ? formatUserDisplay({
+                        full_name: poster.full_name,
+                        role: poster.role,
+                        shift: poster.shift,
+                        has_hazmat: poster.has_hazmat,
+                        has_license: poster.has_license,
+                        has_crane: poster.has_crane,
+                      })
+                    : "לא ידוע"}
+                </p>
                 <span className="mt-2 inline-block rounded-full bg-zinc-200/90 px-2 py-1 text-xs text-zinc-800">
                   {STATUS_LABELS[offer.status]}
                 </span>

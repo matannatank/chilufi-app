@@ -99,6 +99,8 @@ export function buildPushContent(
   const location = LOCATION_LABELS[offer.location];
   const posterName = offer.poster.full_name;
   const skills = buildSkillsString(offer.poster);
+  const chosenName = offer.chosen?.full_name ?? "מועמד";
+  const rejectionReason = offer.rejection_reason?.trim() || "לא צוין";
   const url = `${APP_URL}/offer/${offer.id}`;
 
   switch (type) {

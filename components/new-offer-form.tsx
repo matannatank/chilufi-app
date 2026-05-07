@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import type { Location } from "@/types";
+import { SHIFT_LABELS } from "@/types";
+import type { Location, Shift } from "@/types";
 
 type NewOfferFormProps = {
   userId: string;
+  userShift: Shift;
 };
 
 const LOCATION_OPTIONS: Array<{ value: Location; label: string }> = [
@@ -15,11 +17,12 @@ const LOCATION_OPTIONS: Array<{ value: Location; label: string }> = [
   { value: "elad", label: "אלעד" },
 ];
 
-export function NewOfferForm({ userId }: NewOfferFormProps) {
+export function NewOfferForm({ userId, userShift }: NewOfferFormProps) {
   const router = useRouter();
   const [shiftDate, setShiftDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startTime, setStartTime] = useState("07:00");
+  const [endTime, setEndTime] = useState("07:00");
+  const [targetShift, setTargetShift] = useState<Shift | null>(null);
   const [location, setLocation] = useState<Location>("petah_tikva");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -36,6 +39,11 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
       return;
     }
 
+    if (targetShift && targetShift === userShift) {
+      setError("לא ניתן להחליף עם המשמרת שלך");
+      return;
+    }
+
     setIsSaving(true);
     const supabase = createClient();
 
@@ -48,6 +56,7 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
         end_time: endTime,
         location,
         notes: notes.trim() || null,
+        target_shift: targetShift,
         status: "open",
       })
       .select("id")
@@ -111,6 +120,35 @@ export function NewOfferForm({ userId }: NewOfferFormProps) {
           />
         </label>
       </div>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-semibold text-zinc-900">משמרת מבוקשת</legend>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900">
+            <input
+              type="radio"
+              name="target_shift"
+              checked={targetShift === null}
+              onChange={() => setTargetShift(null)}
+            />
+            כל המשמרות
+          </label>
+          {(["a", "b", "c"] as Shift[]).map((option) => (
+            <label
+              key={option}
+              className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900"
+            >
+              <input
+                type="radio"
+                name="target_shift"
+                checked={targetShift === option}
+                onChange={() => setTargetShift(option)}
+              />
+              {SHIFT_LABELS[option]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-semibold text-zinc-900">מיקום</legend>

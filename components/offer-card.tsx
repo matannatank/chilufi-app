@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { LOCATION_LABELS } from "@/types";
+import { LOCATION_LABELS, STATUS_LABELS } from "@/types";
 import { formatUserDisplay } from "@/lib/format";
-import type { Location, Shift, UserRole } from "@/types";
+import type { Location, OfferStatus, Shift, UserRole } from "@/types";
 
 type OfferCardProps = {
   id: string;
@@ -16,6 +16,7 @@ type OfferCardProps = {
   hasLicense: boolean;
   hasCrane: boolean;
   applicantsCount: number;
+  status: OfferStatus;
   isMine: boolean;
   iApplied: boolean;
 };
@@ -44,6 +45,7 @@ export function OfferCard({
   hasLicense,
   hasCrane,
   applicantsCount,
+  status,
   isMine,
   iApplied,
 }: OfferCardProps) {
@@ -80,6 +82,11 @@ export function OfferCard({
       <div className="flex items-center justify-between text-xs font-medium text-zinc-700">
         <span>{applicantsCount} הגישו מועמדות</span>
         <div className="flex items-center gap-2">
+          {status === "pending_approval" ? (
+            <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-1 text-amber-900">
+              {STATUS_LABELS.pending_approval}
+            </span>
+          ) : null}
           {isMine ? (
             <span className="rounded-full border border-blue-200/80 bg-blue-100 px-2 py-1 text-blue-900">
               ההצעה שלך

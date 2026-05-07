@@ -4,7 +4,7 @@ import Link from "next/link";
 import { OfferCard } from "@/components/offer-card";
 import { BottomNav } from "@/components/bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
-import type { Location, Shift, UserRole } from "@/types";
+import type { Location, OfferStatus, Shift, UserRole } from "@/types";
 
 type HomeOfferRow = {
   id: string;
@@ -12,7 +12,10 @@ type HomeOfferRow = {
   start_time: string;
   end_time: string;
   location: Location;
+  status: OfferStatus;
   poster_id: string;
+  chosen_applicant_id: string | null;
+  target_shift: Shift | null;
   profiles:
     | {
         full_name: string;
@@ -43,18 +46,30 @@ export default async function HomePage() {
     redirect("/");
   }
 
+  const { data: currentProfile } = await supabase
+    .from("profiles")
+    .select("shift")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const userShift = currentProfile?.shift as Shift | null;
   const today = new Date().toISOString().split("T")[0];
 
   const { data: offersRaw, error } = await supabase
     .from("swap_offers")
     .select(
-      "id, shift_date, start_time, end_time, location, poster_id, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
+      "id, shift_date, start_time, end_time, location, status, poster_id, chosen_applicant_id, target_shift, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
     )
-    .eq("status", "open")
+    .in("status", ["open", "pending_approval"])
     .gte("shift_date", today)
     .order("shift_date", { ascending: true });
 
-  const offers = (offersRaw ?? []) as HomeOfferRow[];
+  const offers = ((offersRaw ?? []) as HomeOfferRow[]).filter((offer) => {
+    if (offer.poster_id === user.id) return true;
+    if (offer.target_shift === null) return true;
+    if (!userShift) return false;
+    return offer.target_shift === userShift;
+  });
 
   const offerIds = offers.map((offer) => offer.id);
 
@@ -135,6 +150,7 @@ export default async function HomePage() {
                 hasLicense={poster.has_license}
                 hasCrane={poster.has_crane}
                 applicantsCount={applicationByOffer.get(offer.id) ?? 0}
+                status={offer.status}
                 isMine={offer.poster_id === user.id}
                 iApplied={userAppliedOffers.has(offer.id)}
               />

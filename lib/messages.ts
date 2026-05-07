@@ -1,5 +1,6 @@
 import { LOCATION_LABELS } from "@/types";
-import type { Location, UserRole } from "@/types";
+import { SHIFT_LABELS } from "@/types";
+import type { Location, Shift, UserRole } from "@/types";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:3000";
 
@@ -8,7 +9,12 @@ export type NotifyType =
   | "new_application"
   | "chosen"
   | "cancelled_w_app"
-  | "cancelled_after_match";
+  | "cancelled_after_match"
+  | "cancelled_during_approval"
+  | "commander_approval_needed"
+  | "commander_approved"
+  | "commander_rejected"
+  | "auto_approved";
 
 export type NotifyMessageOffer = {
   id: string;
@@ -19,9 +25,15 @@ export type NotifyMessageOffer = {
   poster: {
     full_name: string;
     role: UserRole;
+    shift?: Shift | null;
     has_hazmat: boolean;
     has_license: boolean;
   };
+  chosen?: {
+    full_name: string;
+    shift: Shift | null;
+  } | null;
+  rejection_reason?: string | null;
 };
 
 function buildSkillsString(profile: NotifyMessageOffer["poster"]) {
@@ -47,6 +59,10 @@ export function buildMessage(type: NotifyType, offer: NotifyMessageOffer): strin
   const posterName = offer.poster.full_name;
   const skills = buildSkillsString(offer.poster);
   const link = `${APP_URL}/offer/${offer.id}`;
+  const posterShift = offer.poster.shift ? SHIFT_LABELS[offer.poster.shift] : "ללא משמרת";
+  const chosenName = offer.chosen?.full_name ?? "מועמד";
+  const chosenShift = offer.chosen?.shift ? SHIFT_LABELS[offer.chosen.shift] : "ללא משמרת";
+  const rejectionReason = offer.rejection_reason?.trim() || "לא צוין";
 
   switch (type) {
     case "new_offer":
@@ -59,6 +75,16 @@ export function buildMessage(type: NotifyType, offer: NotifyMessageOffer): strin
       return `*הצעת חילוף בוטלה*\n${posterName} ביטל את ההצעה שאליה הגשת מועמדות.\n${date}\n${location}`;
     case "cancelled_after_match":
       return `*הצעת חילוף בוטלה*\n${posterName} ביטל את ההצעה אליה נבחרת.\n${date}\n${location}`;
+    case "cancelled_during_approval":
+      return `*הצעת חילוף בוטלה בזמן אישור מפקדים*\n${posterName} ביטל את ההצעה.\n${date}\n${location}`;
+    case "commander_approval_needed":
+      return `🔔 *נדרש אישור חילוף משמרת*\n\nחילוף ממתין לאישורך:\n\n👤 ${posterName} (${posterShift}) ↔ ${chosenName} (${chosenShift})\n\n📅 ${date}\n\n🕖 ${hours}\n\n📍 ${location}\n\nלאישור או דחייה:\n\n${link}`;
+    case "commander_approved":
+      return `✅ *מפקד אחד אישר את החילוף*\n\nהחילוף ממתין לאישור המפקד השני.\n\n📅 ${date}\n\n📍 ${location}\n\nמעקב:\n\n${link}`;
+    case "commander_rejected":
+      return `❌ *החילוף נדחה על ידי מפקד*\n\n📅 ${date}\n\n📍 ${location}\n\nסיבה: "${rejectionReason}"\n\nההצעה חוזרת לרשימת הפתוחים. ניתן לבחור מועמד אחר או לחכות לחדשים.\n\n${link}`;
+    case "auto_approved":
+      return `✅ *החילוף אושר אוטומטית*\n\nשני הצדדים מפקדי משמרת במשמרות שלהם.\n\n📅 ${date}\n\n📍 ${location}\n\nפרטים: ${link}`;
     default:
       return "עדכון מאפליקציית חילופי";
   }
@@ -104,6 +130,36 @@ export function buildPushContent(
       return {
         title: "הצעה בוטלה",
         body: `${posterName} ביטל את ההצעה · ${date} · ${location}`,
+        url,
+      };
+    case "cancelled_during_approval":
+      return {
+        title: "הצעה בוטלה בזמן אישור",
+        body: `${posterName} ביטל הצעה ממתינה לאישור · ${date} · ${location}`,
+        url,
+      };
+    case "commander_approval_needed":
+      return {
+        title: "נדרש אישור מפקד",
+        body: `${posterName} ↔ ${chosenName} · ${date} · ${location}`,
+        url,
+      };
+    case "commander_approved":
+      return {
+        title: "אישור ראשון התקבל",
+        body: `${date} · ${location} · ממתין לאישור נוסף`,
+        url,
+      };
+    case "commander_rejected":
+      return {
+        title: "החילוף נדחה",
+        body: `סיבה: ${rejectionReason}`,
+        url,
+      };
+    case "auto_approved":
+      return {
+        title: "החילוף אושר אוטומטית",
+        body: `${date} · ${location}`,
         url,
       };
     default:

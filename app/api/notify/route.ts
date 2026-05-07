@@ -3,14 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 import { buildMessage } from "@/lib/messages";
 import { sendWebPushForOfferEvent, isWebPushConfigured } from "@/lib/push-send";
 import { isTwilioConfigured, sendWhatsApp } from "@/lib/twilio";
-import type { Location, UserRole } from "@/types";
+import type { Location, Shift, UserRole } from "@/types";
 
 type NotifyType =
   | "new_offer"
   | "new_application"
   | "chosen"
   | "cancelled_w_app"
-  | "cancelled_after_match";
+  | "cancelled_after_match"
+  | "cancelled_during_approval"
+  | "commander_approval_needed"
+  | "commander_approved"
+  | "commander_rejected"
+  | "auto_approved";
 
 type Recipient = { phone: string; name: string; userId: string };
 
@@ -48,6 +53,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json()) as {
     type?: NotifyType;
     offerId?: string;
+    rejectionReason?: string;
   };
 
   if (!body.type || !body.offerId) {
@@ -57,7 +63,7 @@ export async function POST(req: NextRequest) {
   const { data: offerRow, error: offerError } = await supabaseAdmin
     .from("swap_offers")
     .select(
-      "id, poster_id, shift_date, start_time, end_time, location, chosen_applicant_id, profiles!swap_offers_poster_id_fkey(full_name, role, has_hazmat, has_license)",
+      "id, poster_id, shift_date, start_time, end_time, location, chosen_applicant_id, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license)",
     )
     .eq("id", body.offerId)
     .single();
@@ -74,6 +80,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Poster profile missing" }, { status: 400 });
   }
 
+  let chosenProfile:
+    | {
+        id: string;
+        full_name: string;
+        phone: string;
+        shift: Shift | null;
+      }
+    | null = null;
+
+  if (offerRow.chosen_applicant_id) {
+    const { data } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, phone, shift")
+      .eq("id", offerRow.chosen_applicant_id)
+      .maybeSingle();
+    chosenProfile = data;
+  }
+
   const offer = {
     id: offerRow.id,
     shift_date: offerRow.shift_date,
@@ -83,9 +107,17 @@ export async function POST(req: NextRequest) {
     poster: {
       full_name: poster.full_name,
       role: poster.role as UserRole,
+      shift: (poster.shift as Shift | null) ?? null,
       has_hazmat: poster.has_hazmat,
       has_license: poster.has_license,
     },
+    chosen: chosenProfile
+      ? {
+          full_name: chosenProfile.full_name,
+          shift: chosenProfile.shift,
+        }
+      : null,
+    rejection_reason: body.rejectionReason ?? null,
   };
 
   let recipients: Recipient[] = [];
@@ -123,21 +155,78 @@ export async function POST(req: NextRequest) {
     }
     case "chosen":
     case "cancelled_after_match": {
-      if (offerRow.chosen_applicant_id) {
-        const { data: chosenProfile } = await supabaseAdmin
+      if (chosenProfile) {
+        recipients = [
+          {
+            phone: chosenProfile.phone,
+            name: chosenProfile.full_name,
+            userId: chosenProfile.id,
+          },
+        ];
+      }
+      break;
+    }
+    case "commander_approval_needed": {
+      const { data: approvals } = await supabaseAdmin
+        .from("commander_approvals")
+        .select("commander_id")
+        .eq("offer_id", body.offerId)
+        .eq("status", "pending");
+
+      if (approvals && approvals.length > 0) {
+        const commanderIds = approvals.map((row) => row.commander_id);
+        const { data: commanders } = await supabaseAdmin
           .from("profiles")
-          .select("phone, full_name, id")
-          .eq("id", offerRow.chosen_applicant_id)
-          .single();
-        if (chosenProfile) {
-          recipients = [
-            {
-              phone: chosenProfile.phone,
-              name: chosenProfile.full_name,
-              userId: chosenProfile.id,
-            },
-          ];
-        }
+          .select("id, full_name, phone")
+          .in("id", commanderIds);
+        recipients =
+          commanders?.map((profile) => ({
+            phone: profile.phone,
+            name: profile.full_name,
+            userId: profile.id,
+          })) ?? [];
+      }
+      break;
+    }
+    case "commander_approved":
+    case "commander_rejected":
+    case "auto_approved": {
+      const ids = [offerRow.poster_id, offerRow.chosen_applicant_id].filter(
+        (value): value is string => Boolean(value),
+      );
+      if (ids.length > 0) {
+        const { data: profiles } = await supabaseAdmin
+          .from("profiles")
+          .select("id, full_name, phone")
+          .in("id", ids);
+        recipients =
+          profiles?.map((profile) => ({
+            phone: profile.phone,
+            name: profile.full_name,
+            userId: profile.id,
+          })) ?? [];
+      }
+      break;
+    }
+    case "cancelled_during_approval": {
+      const { data: approvals } = await supabaseAdmin
+        .from("commander_approvals")
+        .select("commander_id")
+        .eq("offer_id", body.offerId)
+        .eq("status", "pending");
+
+      if (approvals && approvals.length > 0) {
+        const commanderIds = approvals.map((row) => row.commander_id);
+        const { data: commanders } = await supabaseAdmin
+          .from("profiles")
+          .select("id, full_name, phone")
+          .in("id", commanderIds);
+        recipients =
+          commanders?.map((profile) => ({
+            phone: profile.phone,
+            name: profile.full_name,
+            userId: profile.id,
+          })) ?? [];
       }
       break;
     }

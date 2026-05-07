@@ -156,11 +156,11 @@ export function OfferActions({
       return;
     }
 
-    const skipPosterApproval =
-      posterProfile.role === "shift_commander" && posterProfile.shift === posterProfile.shift;
-    const skipApplicantApproval =
-      applicantProfile.role === "shift_commander" &&
-      applicantProfile.shift === applicantProfile.shift;
+    const posterShift = posterProfile.shift as Shift;
+    const applicantShift = applicantProfile.shift as Shift;
+
+    const skipPosterApproval = posterProfile.role === "shift_commander";
+    const skipApplicantApproval = applicantProfile.role === "shift_commander";
 
     const approvalRows = new Map<string, { commander_id: string; shift: Shift }>();
 
@@ -169,17 +169,17 @@ export function OfferActions({
         .from("profiles")
         .select("id, shift")
         .eq("role", "shift_commander")
-        .eq("shift", posterProfile.shift)
+        .eq("shift", posterShift)
         .maybeSingle();
 
       if (!posterCommander) {
         setIsSaving(false);
-        setError(`לא נמצא מפקד משמרת ל${SHIFT_LABELS[posterProfile.shift]}. פנה לאדמין.`);
+        setError(`לא נמצא מפקד משמרת ל${SHIFT_LABELS[posterShift]}. פנה לאדמין.`);
         return;
       }
       approvalRows.set(posterCommander.id, {
         commander_id: posterCommander.id,
-        shift: posterProfile.shift,
+        shift: posterShift,
       });
     }
 
@@ -188,17 +188,17 @@ export function OfferActions({
         .from("profiles")
         .select("id, shift")
         .eq("role", "shift_commander")
-        .eq("shift", applicantProfile.shift)
+        .eq("shift", applicantShift)
         .maybeSingle();
 
       if (!applicantCommander) {
         setIsSaving(false);
-        setError(`לא נמצא מפקד משמרת ל${SHIFT_LABELS[applicantProfile.shift]}. פנה לאדמין.`);
+        setError(`לא נמצא מפקד משמרת ל${SHIFT_LABELS[applicantShift]}. פנה לאדמין.`);
         return;
       }
       approvalRows.set(applicantCommander.id, {
         commander_id: applicantCommander.id,
-        shift: applicantProfile.shift,
+        shift: applicantShift,
       });
     }
 

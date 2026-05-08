@@ -53,7 +53,7 @@ export default async function HomePage() {
     .maybeSingle();
 
   const userShift = currentProfile?.shift as Shift | null;
-  const today = new Date().toISOString().split("T")[0];
+  const currentDate = new Date().toISOString().split("T")[0];
 
   const { data: offersRaw, error } = await supabase
     .from("swap_offers")
@@ -61,8 +61,9 @@ export default async function HomePage() {
       "id, shift_date, start_time, end_time, location, status, poster_id, chosen_applicant_id, target_shift, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
     )
     .in("status", ["open", "pending_approval"])
-    .gte("shift_date", today)
-    .order("shift_date", { ascending: true });
+    .gte("shift_date", currentDate)
+    .order("shift_date", { ascending: true })
+    .order("created_at", { ascending: false });
 
   const offers = ((offersRaw ?? []) as HomeOfferRow[]).filter((offer) => {
     if (offer.poster_id === user.id) return true;

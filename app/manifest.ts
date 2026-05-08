@@ -26,5 +26,19 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any",
       },
     ],
+    shortcuts: [
+      {
+        name: "צור הצעה חדשה",
+        url: "/offer/new",
+      },
+      {
+        name: "הבקשות שלי",
+        url: "/my-requests",
+      },
+      {
+        name: "צוות",
+        url: "/team",
+      },
+    ],
   };
 }

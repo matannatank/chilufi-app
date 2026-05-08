@@ -160,7 +160,7 @@ export function ProfileSetupForm({
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-semibold text-zinc-900">הכשרות</legend>
         <label className="flex items-center justify-between rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900">
-          סחומ
+          חומ״ס
           <input
             type="checkbox"
             checked={hasHazmat}

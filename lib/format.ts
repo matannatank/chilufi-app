@@ -14,7 +14,7 @@ export function formatUserDisplay(
   }
 
   const skills: string[] = [];
-  if (profile.has_hazmat) skills.push('חומ"ס');
+  if (profile.has_hazmat) skills.push("חומ״ס");
   if (profile.has_license) skills.push("רישיון");
   if (profile.has_crane) skills.push("מנופאי");
 

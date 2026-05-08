@@ -38,7 +38,7 @@ export type NotifyMessageOffer = {
 
 function buildSkillsString(profile: NotifyMessageOffer["poster"]) {
   const parts: string[] = [];
-  if (profile.has_hazmat) parts.push('סחומ');
+  if (profile.has_hazmat) parts.push("חומ״ס");
   if (profile.has_license) parts.push("רישיון");
   return parts.length > 0 ? ` | ${parts.join(" | ")}` : "";
 }

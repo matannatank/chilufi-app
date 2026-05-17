@@ -2,7 +2,7 @@ import { AppBottomNav } from "@/components/app-bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
 import { formatUserDisplay } from "@/lib/format";
 import type { Shift, UserRole } from "@/types";
-import { SHIFT_LABELS } from "@/types";
+import { ROLE_LABELS, SHIFT_LABELS } from "@/types";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -22,6 +22,17 @@ const SHIFT_SECTIONS: Array<{ key: Shift | "none"; label: string }> = [
   { key: "c", label: SHIFT_LABELS.c },
   { key: "none", label: "ללא משמרת" },
 ];
+
+const ROLE_SECTION_ORDER: UserRole[] = [
+  "officer",
+  "team_commander",
+  "shift_commander",
+  "fighter",
+];
+
+function sortByName(a: TeamProfile, b: TeamProfile) {
+  return a.full_name.localeCompare(b.full_name, "he");
+}
 
 export default async function TeamPage() {
   const supabase = await createClient();
@@ -55,41 +66,54 @@ export default async function TeamPage() {
       ) : (
         <section className="flex flex-col gap-4">
           {SHIFT_SECTIONS.map((section) => {
-            const sectionProfiles = profiles.filter((profile) =>
-              section.key === "none" ? profile.shift === null : profile.shift === section.key,
-            );
+            const sectionProfiles = profiles
+              .filter((profile) =>
+                section.key === "none" ? profile.shift === null : profile.shift === section.key,
+              )
+              .sort(sortByName);
 
             return (
               <article key={section.key} className="rounded-xl border border-zinc-300 bg-zinc-50 p-4 shadow-sm">
                 <h2 className="text-base font-semibold text-zinc-900">{section.label}</h2>
-                <div className="mt-3 flex flex-col gap-2">
+                <div className="mt-3 flex flex-col gap-4">
                   {sectionProfiles.length === 0 ? (
                     <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-100 p-3 text-sm text-zinc-600">
                       אין עובדים במשמרת זו
                     </p>
                   ) : (
-                    sectionProfiles.map((profile) => (
-                      <div key={profile.id} className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-bold text-zinc-900">{profile.full_name}</p>
-                          {profile.role === "shift_commander" ? (
-                            <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-1 text-xs text-amber-900">
-                              👑 מפקד משמרת
-                            </span>
-                          ) : null}
+                    ROLE_SECTION_ORDER.map((role) => {
+                      const roleProfiles = sectionProfiles
+                        .filter((profile) => profile.role === role)
+                        .sort(sortByName);
+
+                      if (roleProfiles.length === 0) {
+                        return null;
+                      }
+
+                      return (
+                        <div key={role} className="flex flex-col gap-2">
+                          <h3 className="text-xs font-semibold text-zinc-500">{ROLE_LABELS[role]}</h3>
+                          {roleProfiles.map((profile) => (
+                            <div
+                              key={profile.id}
+                              className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm"
+                            >
+                              <p className="text-sm font-bold text-zinc-900">{profile.full_name}</p>
+                              <p className="mt-1 text-xs text-zinc-700">
+                                {formatUserDisplay({
+                                  full_name: profile.full_name,
+                                  role: profile.role,
+                                  shift: null,
+                                  has_hazmat: profile.has_hazmat,
+                                  has_license: profile.has_license,
+                                  has_crane: profile.has_crane,
+                                }).replace(`${profile.full_name} - `, "")}
+                              </p>
+                            </div>
+                          ))}
                         </div>
-                        <p className="mt-1 text-xs text-zinc-700">
-                          {formatUserDisplay({
-                            full_name: profile.full_name,
-                            role: profile.role,
-                            shift: null,
-                            has_hazmat: profile.has_hazmat,
-                            has_license: profile.has_license,
-                            has_crane: profile.has_crane,
-                          }).replace(`${profile.full_name} - `, "")}
-                        </p>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </article>

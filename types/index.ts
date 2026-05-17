@@ -10,6 +10,8 @@ export type ApprovalStatus = "pending" | "approved" | "rejected";
 
 export type ApplicationStatus = "pending" | "chosen" | "withdrawn";
 
+export type ShiftCommanderRequestStatus = "pending" | "approved" | "rejected";
+
 export interface Profile {
   id: string;
   full_name: string;
@@ -44,6 +46,17 @@ export interface Application {
   applicant_id: string;
   status: ApplicationStatus;
   created_at: string;
+}
+
+export interface ShiftCommanderRequest {
+  id: string;
+  user_id: string;
+  shift: Shift;
+  status: ShiftCommanderRequestStatus;
+  rejection_reason: string | null;
+  reviewed_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CommanderApproval {
@@ -88,3 +101,14 @@ export const APPROVAL_STATUS_LABELS: Record<ApprovalStatus, string> = {
   approved: "אושר",
   rejected: "נדחה",
 };
+
+export const SHIFT_COMMANDER_REQUEST_STATUS_LABELS: Record<
+  ShiftCommanderRequestStatus,
+  string
+> = {
+  pending: "ממתין לאישור",
+  approved: "אושר",
+  rejected: "נדחה",
+};
+
+export const SELF_ASSIGNABLE_ROLES: UserRole[] = ["fighter", "team_commander", "officer"];

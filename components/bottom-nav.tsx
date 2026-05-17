@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 type BottomNavProps = {
   isShiftCommander?: boolean;
   pendingApprovalsCount?: number;
+  isAdmin?: boolean;
+  pendingCommanderRequestsCount?: number;
 };
 
 type NavItem = {
@@ -26,24 +28,45 @@ const BASE_NAV_ITEMS: NavItem[] = [
 export function BottomNav({
   isShiftCommander = false,
   pendingApprovalsCount = 0,
+  isAdmin = false,
+  pendingCommanderRequestsCount = 0,
 }: BottomNavProps) {
   const pathname = usePathname();
 
-  const navItems: NavItem[] = isShiftCommander
-    ? [
-        BASE_NAV_ITEMS[0],
-        {
-          href: "/approvals",
-          label: "אישורים",
-          icon: "✅",
-          badge: pendingApprovalsCount,
-        },
-        ...BASE_NAV_ITEMS.slice(1),
-      ]
-    : BASE_NAV_ITEMS;
+  let navItems: NavItem[] = [...BASE_NAV_ITEMS];
 
-  const gridCols =
-    navItems.length === 6 ? "grid-cols-6" : "grid-cols-5";
+  if (isShiftCommander) {
+    navItems = [
+      navItems[0],
+      {
+        href: "/approvals",
+        label: "אישורים",
+        icon: "✅",
+        badge: pendingApprovalsCount,
+      },
+      ...navItems.slice(1),
+    ];
+  }
+
+  if (isAdmin) {
+    navItems = [
+      navItems[0],
+      {
+        href: "/admin",
+        label: "ניהול",
+        icon: "⚙️",
+        badge: pendingCommanderRequestsCount,
+      },
+      ...navItems.slice(1),
+    ];
+  }
+
+  const gridColsClass: Record<number, string> = {
+    5: "grid-cols-5",
+    6: "grid-cols-6",
+    7: "grid-cols-7",
+  };
+  const gridCols = gridColsClass[navItems.length] ?? "grid-cols-5";
 
   return (
     <nav

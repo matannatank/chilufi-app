@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { ROLE_LABELS, SHIFT_LABELS } from "@/types";
+import { ROLE_LABELS, SELF_ASSIGNABLE_ROLES, SHIFT_LABELS } from "@/types";
 import type { Profile, Shift, UserRole } from "@/types";
 
 type ProfileSetupFormProps = {
@@ -13,12 +13,9 @@ type ProfileSetupFormProps = {
   redirectTo?: string;
 };
 
-const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
-  { value: "officer", label: ROLE_LABELS.officer },
-  { value: "team_commander", label: ROLE_LABELS.team_commander },
-  { value: "shift_commander", label: ROLE_LABELS.shift_commander },
-  { value: "fighter", label: ROLE_LABELS.fighter },
-];
+const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = SELF_ASSIGNABLE_ROLES.map(
+  (role) => ({ value: role, label: ROLE_LABELS[role] }),
+);
 
 const SHIFT_OPTIONS: Shift[] = ["a", "b", "c"];
 
@@ -62,13 +59,15 @@ export function ProfileSetupForm({
 
     setIsSaving(true);
     const supabase = createClient();
+    const roleToSave =
+      initialProfile?.role === "shift_commander" ? "shift_commander" : role;
 
     const { error: upsertError } = await supabase.from("profiles").upsert(
       {
         id: userId,
         full_name: fullName.trim(),
         phone,
-        role,
+        role: roleToSave,
         shift,
         has_hazmat: hasHazmat,
         has_license: hasLicense,
@@ -115,26 +114,34 @@ export function ProfileSetupForm({
         />
       </label>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-semibold text-zinc-900">תפקיד</legend>
-        <div className="flex flex-col gap-2">
-          {ROLE_OPTIONS.map((option) => (
-            <label
-              key={option.value}
-              className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900"
-            >
-              <input
-                type="radio"
-                name="role"
-                value={option.value}
-                checked={role === option.value}
-                onChange={() => setRole(option.value)}
-              />
-              {option.label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      {initialProfile?.role === "shift_commander" ? (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          תפקידך: {ROLE_LABELS.shift_commander}
+          {initialProfile.shift ? ` · ${SHIFT_LABELS[initialProfile.shift]}` : ""}. שינוי תפקיד
+          מתבצע דרך מנהל המערכת.
+        </p>
+      ) : (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-semibold text-zinc-900">תפקיד</legend>
+          <div className="flex flex-col gap-2">
+            {ROLE_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900"
+              >
+                <input
+                  type="radio"
+                  name="role"
+                  value={option.value}
+                  checked={role === option.value}
+                  onChange={() => setRole(option.value)}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-semibold text-zinc-900">משמרת</legend>

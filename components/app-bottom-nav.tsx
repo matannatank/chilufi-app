@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { BottomNav } from "@/components/bottom-nav";
+import { isAppAdmin, countPendingShiftCommanderRequests } from "@/lib/app-admin";
 import { countPendingCommanderApprovals } from "@/lib/pending-commander-approvals";
 
 export async function AppBottomNav() {
@@ -19,14 +20,19 @@ export async function AppBottomNav() {
     .maybeSingle();
 
   const isShiftCommander = profile?.role === "shift_commander";
-  const pendingApprovalsCount = isShiftCommander
-    ? await countPendingCommanderApprovals(supabase, user.id)
-    : 0;
+  const isAdmin = await isAppAdmin(supabase, user.id);
+
+  const [pendingApprovalsCount, pendingCommanderRequestsCount] = await Promise.all([
+    isShiftCommander ? countPendingCommanderApprovals(supabase, user.id) : Promise.resolve(0),
+    isAdmin ? countPendingShiftCommanderRequests(supabase) : Promise.resolve(0),
+  ]);
 
   return (
     <BottomNav
       isShiftCommander={isShiftCommander}
       pendingApprovalsCount={pendingApprovalsCount}
+      isAdmin={isAdmin}
+      pendingCommanderRequestsCount={pendingCommanderRequestsCount}
     />
   );
 }

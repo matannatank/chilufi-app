@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { buildMessage } from "@/lib/messages";
-import { sendWebPushForOfferEvent, isWebPushConfigured } from "@/lib/push-send";
+import {
+  buildMessage,
+  buildShiftCommanderRequestMessage,
+  type ShiftCommanderRequestNotifyType,
+} from "@/lib/messages";
+import {
+  sendWebPushForOfferEvent,
+  sendWebPushForShiftCommanderRequest,
+  isWebPushConfigured,
+} from "@/lib/push-send";
 import { isTwilioConfigured, sendWhatsApp } from "@/lib/twilio";
 import type { Location, Shift, UserRole } from "@/types";
 
@@ -18,6 +26,94 @@ type NotifyType =
   | "auto_approved";
 
 type Recipient = { phone: string; name: string; userId: string };
+
+const SHIFT_COMMANDER_REQUEST_TYPES = new Set<ShiftCommanderRequestNotifyType>([
+  "shift_commander_request_submitted",
+  "shift_commander_request_approved",
+  "shift_commander_request_rejected",
+]);
+
+function isShiftCommanderRequestType(
+  type: string | undefined,
+): type is ShiftCommanderRequestNotifyType {
+  return Boolean(type && SHIFT_COMMANDER_REQUEST_TYPES.has(type as ShiftCommanderRequestNotifyType));
+}
+
+async function deliverNotifications(
+  recipients: Recipient[],
+  message: string,
+  pushSend: () => Promise<{
+    skipped: boolean;
+    reason?: string;
+    targetUserCount: number;
+    attempted: number;
+    sent: number;
+    failed: number;
+    loadFailed?: boolean;
+  }>,
+) {
+  const withPhone = recipients.filter((recipient) => recipient.phone.trim().length > 0);
+  const skippedNoPhone = recipients.length - withPhone.length;
+
+  let whatsappSent = 0;
+  let whatsappFailed = 0;
+  let failures:
+    | Array<{
+        phoneSuffix: string;
+        reason: string;
+        twilioCode?: number;
+        twilioMessage?: string;
+      }>
+    | undefined;
+
+  if (isTwilioConfigured()) {
+    const results = await Promise.all(
+      withPhone.map((recipient) => sendWhatsApp(recipient.phone, message)),
+    );
+    whatsappSent = results.filter((result) => result.success).length;
+    whatsappFailed = results.length - whatsappSent;
+    const flat = results.flatMap((result, index) => {
+      if (result.success) {
+        return [];
+      }
+      const phoneSuffix = withPhone[index]?.phone.slice(-4) ?? "";
+      return [
+        {
+          phoneSuffix,
+          reason: result.reason,
+          twilioCode: result.twilioCode,
+          twilioMessage: result.twilioMessage,
+        },
+      ];
+    });
+    failures = flat.length > 0 ? flat : undefined;
+  }
+
+  const pushResult = isWebPushConfigured()
+    ? await pushSend()
+    : {
+        skipped: true as const,
+        reason: "web_push_not_configured" as const,
+        targetUserCount: 0,
+        attempted: 0,
+        sent: 0,
+        failed: 0,
+      };
+
+  return NextResponse.json({
+    whatsapp: {
+      sent: whatsappSent,
+      failed: whatsappFailed,
+      skipped: !isTwilioConfigured(),
+      reason: !isTwilioConfigured() ? "twilio_not_configured" : undefined,
+      recipientCount: recipients.length,
+      attempted: isTwilioConfigured() ? withPhone.length : 0,
+      skippedNoPhone,
+      failures,
+    },
+    push: pushResult,
+  });
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -51,10 +147,75 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json()) as {
-    type?: NotifyType;
+    type?: string;
     offerId?: string;
+    requestId?: string;
     rejectionReason?: string;
   };
+
+  if (isShiftCommanderRequestType(body.type) && body.requestId) {
+    const { data: requestRow, error: requestError } = await supabaseAdmin
+      .from("shift_commander_requests")
+      .select("id, user_id, shift, status, rejection_reason, profiles!shift_commander_requests_user_id_fkey(full_name, phone)")
+      .eq("id", body.requestId)
+      .single();
+
+    if (requestError || !requestRow) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    const requesterProfile = Array.isArray(requestRow.profiles)
+      ? requestRow.profiles[0]
+      : requestRow.profiles;
+
+    if (!requesterProfile) {
+      return NextResponse.json({ error: "Requester profile missing" }, { status: 400 });
+    }
+
+    const notifyPayload = {
+      requesterName: requesterProfile.full_name,
+      shift: requestRow.shift as Shift,
+      rejectionReason: body.rejectionReason ?? requestRow.rejection_reason,
+    };
+
+    let recipients: Recipient[] = [];
+
+    if (body.type === "shift_commander_request_submitted") {
+      const { data: admins } = await supabaseAdmin
+        .from("app_admins")
+        .select("user_id, profiles!app_admins_user_id_fkey(full_name, phone)");
+
+      recipients =
+        admins?.map((admin) => {
+          const profile = Array.isArray(admin.profiles) ? admin.profiles[0] : admin.profiles;
+          return {
+            userId: admin.user_id,
+            name: profile?.full_name ?? "מנהל",
+            phone: profile?.phone ?? "",
+          };
+        }) ?? [];
+    } else {
+      recipients = [
+        {
+          userId: requestRow.user_id,
+          name: requesterProfile.full_name,
+          phone: requesterProfile.phone,
+        },
+      ];
+    }
+
+    const message = buildShiftCommanderRequestMessage(body.type, notifyPayload);
+    const recipientUserIds = recipients.map((recipient) => recipient.userId);
+
+    return deliverNotifications(recipients, message, () =>
+      sendWebPushForShiftCommanderRequest(
+        supabaseAdmin,
+        body.type as ShiftCommanderRequestNotifyType,
+        notifyPayload,
+        recipientUserIds,
+      ),
+    );
+  }
 
   if (!body.type || !body.offerId) {
     return NextResponse.json({ error: "Missing type or offerId" }, { status: 400 });
@@ -256,67 +417,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unknown notification type" }, { status: 400 });
   }
 
-  const message = buildMessage(body.type, offer);
-  const withPhone = recipients.filter((r) => r.phone.trim().length > 0);
-  const skippedNoPhone = recipients.length - withPhone.length;
+  const message = buildMessage(body.type as NotifyType, offer);
+  const recipientUserIds = recipients.map((recipient) => recipient.userId);
 
-  let whatsappSent = 0;
-  let whatsappFailed = 0;
-  let failures:
-    | Array<{
-        phoneSuffix: string;
-        reason: string;
-        twilioCode?: number;
-        twilioMessage?: string;
-      }>
-    | undefined;
-
-  if (isTwilioConfigured()) {
-    const results = await Promise.all(
-      withPhone.map((recipient) => sendWhatsApp(recipient.phone, message)),
-    );
-    whatsappSent = results.filter((result) => result.success).length;
-    whatsappFailed = results.length - whatsappSent;
-    const flat = results.flatMap((result, index) => {
-      if (result.success) {
-        return [];
-      }
-      const phoneSuffix = withPhone[index]?.phone.slice(-4) ?? "";
-      return [
-        {
-          phoneSuffix,
-          reason: result.reason,
-          twilioCode: result.twilioCode,
-          twilioMessage: result.twilioMessage,
-        },
-      ];
-    });
-    failures = flat.length > 0 ? flat : undefined;
-  }
-
-  const recipientUserIds = recipients.map((r) => r.userId);
-  const pushResult = isWebPushConfigured()
-    ? await sendWebPushForOfferEvent(supabaseAdmin, body.type, offer, recipientUserIds)
-    : {
-        skipped: true as const,
-        reason: "web_push_not_configured" as const,
-        targetUserCount: 0,
-        attempted: 0,
-        sent: 0,
-        failed: 0,
-      };
-
-  return NextResponse.json({
-    whatsapp: {
-      sent: whatsappSent,
-      failed: whatsappFailed,
-      skipped: !isTwilioConfigured(),
-      reason: !isTwilioConfigured() ? "twilio_not_configured" : undefined,
-      recipientCount: recipients.length,
-      attempted: isTwilioConfigured() ? withPhone.length : 0,
-      skippedNoPhone,
-      failures,
-    },
-    push: pushResult,
-  });
+  return deliverNotifications(recipients, message, () =>
+    sendWebPushForOfferEvent(
+      supabaseAdmin,
+      body.type as NotifyType,
+      offer,
+      recipientUserIds,
+    ),
+  );
 }

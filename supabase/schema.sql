@@ -58,10 +58,50 @@ create index idx_applications_offer on applications(offer_id);
 create index idx_commander_approvals_offer on commander_approvals(offer_id);
 create index idx_commander_approvals_commander on commander_approvals(commander_id, status);
 
+create table app_admins (
+  user_id uuid primary key references profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  created_by uuid references profiles(id) on delete set null
+);
+
+create table shift_commander_requests (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  shift text not null check (shift in ('a', 'b', 'c')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  rejection_reason text,
+  reviewed_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint shift_commander_requests_rejection_reason_required
+    check (status != 'rejected' or (rejection_reason is not null and length(trim(rejection_reason)) > 0))
+);
+
+create unique index idx_shift_commander_requests_one_pending
+  on shift_commander_requests (user_id)
+  where status = 'pending';
+
+create index idx_shift_commander_requests_status
+  on shift_commander_requests (status, created_at desc);
+
+create or replace function public.is_app_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from app_admins where user_id = auth.uid()
+  );
+$$;
+
 alter table profiles enable row level security;
 alter table swap_offers enable row level security;
 alter table applications enable row level security;
 alter table commander_approvals enable row level security;
+alter table app_admins enable row level security;
+alter table shift_commander_requests enable row level security;
 
 create policy "Anyone authenticated can read profiles"
 on profiles for select
@@ -69,11 +109,27 @@ using (auth.role() = 'authenticated');
 
 create policy "Users can insert their own profile"
 on profiles for insert
-with check (auth.uid() = id);
+with check (auth.uid() = id and role <> 'shift_commander');
 
-create policy "Users can update their own profile"
+create policy "Users can update own profile without commander self-promotion"
 on profiles for update
-using (auth.uid() = id);
+using (auth.uid() = id)
+with check (
+  auth.uid() = id
+  and (
+    role <> 'shift_commander'
+    or exists (
+      select 1 from profiles as existing_profile
+      where existing_profile.id = auth.uid()
+        and existing_profile.role = 'shift_commander'
+    )
+  )
+);
+
+create policy "Admins can update any profile"
+on profiles for update
+using (public.is_app_admin())
+with check (public.is_app_admin());
 
 create policy "Anyone authenticated can read offers"
 on swap_offers for select
@@ -153,6 +209,34 @@ for each row execute function update_updated_at_column();
 create trigger update_commander_approvals_updated_at
 before update on commander_approvals
 for each row execute function update_updated_at_column();
+
+create trigger update_shift_commander_requests_updated_at
+before update on shift_commander_requests
+for each row execute function update_updated_at_column();
+
+create policy "Admins can read app_admins"
+on app_admins for select
+using (public.is_app_admin());
+
+create policy "Admins can insert app_admins"
+on app_admins for insert
+with check (public.is_app_admin());
+
+create policy "Admins can delete app_admins"
+on app_admins for delete
+using (public.is_app_admin());
+
+create policy "Users and admins can read shift commander requests"
+on shift_commander_requests for select
+using (auth.uid() = user_id or public.is_app_admin());
+
+create policy "Users can create own pending shift commander request"
+on shift_commander_requests for insert
+with check (auth.uid() = user_id and status = 'pending');
+
+create policy "Admins can update shift commander requests"
+on shift_commander_requests for update
+using (public.is_app_admin());
 
 -- Web Push subscriptions (see also push_subscriptions.sql for RLS-only migration on existing DBs)
 create table if not exists push_subscriptions (

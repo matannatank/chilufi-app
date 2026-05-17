@@ -16,6 +16,17 @@ export type NotifyType =
   | "commander_rejected"
   | "auto_approved";
 
+export type ShiftCommanderRequestNotifyType =
+  | "shift_commander_request_submitted"
+  | "shift_commander_request_approved"
+  | "shift_commander_request_rejected";
+
+export type ShiftCommanderRequestNotifyPayload = {
+  requesterName: string;
+  shift: Shift;
+  rejectionReason?: string | null;
+};
+
 export type NotifyMessageOffer = {
   id: string;
   shift_date: string;
@@ -89,6 +100,58 @@ export function buildMessage(type: NotifyType, offer: NotifyMessageOffer): strin
       return `✅ *החילוף אושר אוטומטית*\n\nשני הצדדים מפקדי משמרת במשמרות שלהם.\n\n📅 ${date}\n\n📍 ${location}\n\nפרטים: ${link}`;
     default:
       return "עדכון מאפליקציית חילופי";
+  }
+}
+
+export function buildShiftCommanderRequestMessage(
+  type: ShiftCommanderRequestNotifyType,
+  payload: ShiftCommanderRequestNotifyPayload,
+): string {
+  const shiftLabel = SHIFT_LABELS[payload.shift];
+  const adminLink = `${APP_URL}/admin`;
+  const profileLink = `${APP_URL}/profile`;
+  const rejectionReason = payload.rejectionReason?.trim() || "לא צוין";
+
+  switch (type) {
+    case "shift_commander_request_submitted":
+      return `*בקשה חדשה למפקד משמרת*\n\n${payload.requesterName} מבקש להירשם כמפקד משמרת ${shiftLabel}.\n\nלטיפול: ${adminLink}`;
+    case "shift_commander_request_approved":
+      return `✅ *בקשתך למפקד משמרת אושרה*\n\nאושרת כמפקד משמרת ${shiftLabel}.\n\nפרופיל: ${profileLink}`;
+    case "shift_commander_request_rejected":
+      return `❌ *בקשתך למפקד משמרת נדחתה*\n\nמשמרת: ${shiftLabel}\nסיבה: "${rejectionReason}"\n\nניתן לשלוח בקשה חדשה מהפרופיל: ${profileLink}`;
+    default:
+      return "עדכון מאפליקציית חילופי";
+  }
+}
+
+export function buildShiftCommanderRequestPushContent(
+  type: ShiftCommanderRequestNotifyType,
+  payload: ShiftCommanderRequestNotifyPayload,
+): { title: string; body: string; url: string } {
+  const shiftLabel = SHIFT_LABELS[payload.shift];
+  const rejectionReason = payload.rejectionReason?.trim() || "לא צוין";
+
+  switch (type) {
+    case "shift_commander_request_submitted":
+      return {
+        title: "בקשה למפקד משמרת",
+        body: `${payload.requesterName} · ${shiftLabel}`,
+        url: `${APP_URL}/admin`,
+      };
+    case "shift_commander_request_approved":
+      return {
+        title: "בקשתך אושרה",
+        body: `מפקד משמרת ${shiftLabel}`,
+        url: `${APP_URL}/profile`,
+      };
+    case "shift_commander_request_rejected":
+      return {
+        title: "בקשתך נדחתה",
+        body: `סיבה: ${rejectionReason}`,
+        url: `${APP_URL}/profile`,
+      };
+    default:
+      return { title: "חילופי", body: "עדכון חדש", url: APP_URL };
   }
 }
 

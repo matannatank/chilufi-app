@@ -111,6 +111,29 @@ create policy "Commanders can update their own approval"
 on commander_approvals for update
 using (auth.uid() = commander_id);
 
+create policy "Posters can insert commander approvals for own offers"
+on commander_approvals for insert
+with check (
+  auth.uid() = (select poster_id from swap_offers where id = offer_id)
+);
+
+create policy "Posters can delete commander approvals for own offers"
+on commander_approvals for delete
+using (
+  auth.uid() = (select poster_id from swap_offers where id = offer_id)
+);
+
+create policy "Commanders can delete approvals on offers they command"
+on commander_approvals for delete
+using (
+  exists (
+    select 1
+    from commander_approvals as commander_offer_approvals
+    where commander_offer_approvals.offer_id = commander_approvals.offer_id
+      and commander_offer_approvals.commander_id = auth.uid()
+  )
+);
+
 create or replace function update_updated_at_column()
 returns trigger as $$
 begin

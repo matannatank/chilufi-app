@@ -2,8 +2,9 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { OfferCard } from "@/components/offer-card";
-import { BottomNav } from "@/components/bottom-nav";
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
+import { countPendingCommanderApprovals } from "@/lib/pending-commander-approvals";
 import type { Location, OfferStatus, Shift, UserRole } from "@/types";
 
 type HomeOfferRow = {
@@ -48,11 +49,27 @@ export default async function HomePage() {
 
   const { data: currentProfile } = await supabase
     .from("profiles")
-    .select("shift")
+    .select("shift, role")
     .eq("id", user.id)
     .maybeSingle();
 
   const userShift = currentProfile?.shift as Shift | null;
+  const isShiftCommander = currentProfile?.role === "shift_commander";
+  const pendingApprovalsCount = isShiftCommander
+    ? await countPendingCommanderApprovals(supabase, user.id)
+    : 0;
+
+  const { data: myPendingApprovals } = isShiftCommander
+    ? await supabase
+        .from("commander_approvals")
+        .select("offer_id")
+        .eq("commander_id", user.id)
+        .eq("status", "pending")
+    : { data: [] as Array<{ offer_id: string }> };
+
+  const myApprovalOfferIds = new Set(
+    (myPendingApprovals ?? []).map((row) => row.offer_id),
+  );
   const currentDate = new Date().toISOString().split("T")[0];
 
   const { data: offersRaw, error } = await supabase
@@ -66,6 +83,7 @@ export default async function HomePage() {
     .order("created_at", { ascending: false });
 
   const offers = ((offersRaw ?? []) as HomeOfferRow[]).filter((offer) => {
+    if (myApprovalOfferIds.has(offer.id)) return true;
     if (offer.poster_id === user.id) return true;
     if (offer.target_shift === null) return true;
     if (!userShift) return false;
@@ -119,6 +137,15 @@ export default async function HomePage() {
         </Link>
       </div>
 
+      {isShiftCommander && pendingApprovalsCount > 0 ? (
+        <Link
+          href="/approvals"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950 shadow-sm transition hover:border-amber-400"
+        >
+          יש לך {pendingApprovalsCount} חילופים שממתינים לאישורך — לחץ כאן
+        </Link>
+      ) : null}
+
       {error ? (
         <div className="rounded-lg border border-red-300/90 bg-red-100/90 p-3 text-sm text-red-900">
           שגיאה בטעינת ההצעות. נסה לרענן.
@@ -154,6 +181,7 @@ export default async function HomePage() {
                 status={offer.status}
                 isMine={offer.poster_id === user.id}
                 iApplied={userAppliedOffers.has(offer.id)}
+                needsMyApproval={myApprovalOfferIds.has(offer.id)}
               />
             );
           })
@@ -163,7 +191,7 @@ export default async function HomePage() {
           </div>
         )}
       </section>
-      <BottomNav />
+      <AppBottomNav />
     </main>
   );
 }

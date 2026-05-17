@@ -77,8 +77,10 @@ export function buildMessage(type: NotifyType, offer: NotifyMessageOffer): strin
       return `*הצעת חילוף בוטלה*\n${posterName} ביטל את ההצעה אליה נבחרת.\n${date}\n${location}`;
     case "cancelled_during_approval":
       return `*הצעת חילוף בוטלה בזמן אישור מפקדים*\n${posterName} ביטל את ההצעה.\n${date}\n${location}`;
-    case "commander_approval_needed":
-      return `🔔 *נדרש אישור חילוף משמרת*\n\nחילוף ממתין לאישורך:\n\n👤 ${posterName} (${posterShift}) ↔ ${chosenName} (${chosenShift})\n\n📅 ${date}\n\n🕖 ${hours}\n\n📍 ${location}\n\nלאישור או דחייה:\n\n${link}`;
+    case "commander_approval_needed": {
+      const approvalsLink = `${APP_URL}/approvals`;
+      return `🔔 *נדרש אישור חילוף משמרת*\n\nחילוף ממתין לאישורך:\n\n👤 ${posterName} (${posterShift}) ↔ ${chosenName} (${chosenShift})\n\n📅 ${date}\n\n🕖 ${hours}\n\n📍 ${location}\n\nלאישור: ${approvalsLink}\n\nפרטי הצעה: ${link}`;
+    }
     case "commander_approved":
       return `✅ *מפקד אחד אישר את החילוף*\n\nהחילוף ממתין לאישור המפקד השני.\n\n📅 ${date}\n\n📍 ${location}\n\nמעקב:\n\n${link}`;
     case "commander_rejected":
@@ -142,9 +144,9 @@ export function buildPushContent(
       };
     case "commander_approval_needed":
       return {
-        title: "נדרש אישור מפקד",
-        body: `${posterName} ↔ ${chosenName} · ${date} · ${location}`,
-        url,
+        title: "חילוף ממתין לאישורך",
+        body: `${posterName} ↔ ${chosenName} · ${date} · ${location} · לחץ לאשר`,
+        url: `${APP_URL}/approvals`,
       };
     case "commander_approved":
       return {

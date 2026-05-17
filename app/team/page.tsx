@@ -1,4 +1,4 @@
-import { BottomNav } from "@/components/bottom-nav";
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
 import { formatUserDisplay } from "@/lib/format";
 import type { Shift, UserRole } from "@/types";
@@ -98,7 +98,7 @@ export default async function TeamPage() {
         </section>
       )}
 
-      <BottomNav />
+      <AppBottomNav />
     </main>
   );
 }

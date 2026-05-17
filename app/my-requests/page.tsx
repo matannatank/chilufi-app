@@ -1,4 +1,4 @@
-import { BottomNav } from "@/components/bottom-nav";
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
 import { LOCATION_LABELS, SHIFT_LABELS, STATUS_LABELS } from "@/types";
 import type { ApplicationStatus, Location, OfferStatus, Shift } from "@/types";
@@ -198,7 +198,7 @@ export default async function MyRequestsPage() {
         )}
       </section>
 
-      <BottomNav />
+      <AppBottomNav />
     </main>
   );
 }

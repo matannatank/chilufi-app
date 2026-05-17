@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { formatUserDisplay } from "@/lib/format";
 import { LOCATION_LABELS, STATUS_LABELS } from "@/types";
 import type { Location, OfferStatus, Shift, UserRole } from "@/types";
-import { BottomNav } from "@/components/bottom-nav";
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
 
 type HistoryOffer = {
@@ -112,7 +112,7 @@ export default async function HistoryPage() {
         )}
       </section>
 
-      <BottomNav />
+      <AppBottomNav />
     </main>
   );
 }

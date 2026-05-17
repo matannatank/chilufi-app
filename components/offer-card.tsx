@@ -19,6 +19,7 @@ type OfferCardProps = {
   status: OfferStatus;
   isMine: boolean;
   iApplied: boolean;
+  needsMyApproval?: boolean;
 };
 
 const formatDate = (dateValue: string) => {
@@ -48,6 +49,7 @@ export function OfferCard({
   status,
   isMine,
   iApplied,
+  needsMyApproval = false,
 }: OfferCardProps) {
   return (
     <Link
@@ -82,7 +84,12 @@ export function OfferCard({
       <div className="flex items-center justify-between text-xs font-medium text-zinc-700">
         <span>{applicantsCount} הגישו מועמדות</span>
         <div className="flex items-center gap-2">
-          {status === "pending_approval" ? (
+          {needsMyApproval ? (
+            <span className="rounded-full border border-red-300 bg-red-100 px-2 py-1 text-red-900">
+              נדרש האישור שלך
+            </span>
+          ) : null}
+          {status === "pending_approval" && !needsMyApproval ? (
             <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-1 text-amber-900">
               {STATUS_LABELS.pending_approval}
             </span>

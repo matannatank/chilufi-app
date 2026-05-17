@@ -152,7 +152,7 @@ export function OfferActions({
 
     if (!posterProfile?.shift || !applicantProfile?.shift) {
       setIsSaving(false);
-      setError("בחירת המועמד נכשלה");
+      setError("בחירת המועמד נכשלה: למציע או למועמד חסרה משמרת בפרופיל");
       return;
     }
 
@@ -212,7 +212,7 @@ export function OfferActions({
 
     if (offerError) {
       setIsSaving(false);
-      setError("בחירת המועמד נכשלה");
+      setError(`בחירת המועמד נכשלה: ${offerError.message}`);
       return;
     }
 
@@ -223,12 +223,25 @@ export function OfferActions({
       .eq("status", "pending");
 
     if (appError) {
+      await supabase
+        .from("swap_offers")
+        .update({ status: "open", chosen_applicant_id: null })
+        .eq("id", offerId);
       setIsSaving(false);
-      setError("בחירת המועמד נכשלה");
+      setError(`בחירת המועמד נכשלה: ${appError.message}`);
       return;
     }
 
-    await supabase.from("commander_approvals").delete().eq("offer_id", offerId);
+    const { error: approvalsDeleteError } = await supabase
+      .from("commander_approvals")
+      .delete()
+      .eq("offer_id", offerId);
+
+    if (approvalsDeleteError) {
+      setIsSaving(false);
+      setError(`בחירת המועמד נכשלה: ${approvalsDeleteError.message}`);
+      return;
+    }
 
     if (approvalRows.size > 0) {
       const { error: approvalsInsertError } = await supabase
@@ -242,8 +255,16 @@ export function OfferActions({
           })),
         );
       if (approvalsInsertError) {
+        await supabase
+          .from("swap_offers")
+          .update({ status: "open", chosen_applicant_id: null })
+          .eq("id", offerId);
+        await supabase
+          .from("applications")
+          .update({ status: "pending" })
+          .eq("id", applicationId);
         setIsSaving(false);
-        setError("בחירת המועמד נכשלה");
+        setError(`בחירת המועמד נכשלה: ${approvalsInsertError.message}`);
         return;
       }
       await notify("commander_approval_needed", offerId);

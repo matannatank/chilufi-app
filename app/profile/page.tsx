@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ProfileSetupForm } from "@/components/profile-setup-form";
-import { BottomNav } from "@/components/bottom-nav";
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
 import { getPersonalStats } from "@/lib/personal-stats";
 
@@ -43,7 +43,7 @@ export default async function ProfilePage() {
           redirectTo="/profile"
         />
       </div>
-      <BottomNav />
+      <AppBottomNav />
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getSupabase } from "@/lib/server-session";
 import { redirect } from "next/navigation";
 import { ProfileSetupForm } from "@/components/profile-setup-form";
 import { ShiftCommanderRequestSection } from "@/components/shift-commander-request-section";
@@ -7,14 +7,13 @@ import { LogoutButton } from "@/components/logout-button";
 import { getPersonalStats } from "@/lib/personal-stats";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
+
+  const supabase = await getSupabase();
 
   const { data: profile } = await supabase
     .from("profiles")

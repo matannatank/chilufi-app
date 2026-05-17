@@ -3,7 +3,7 @@ import { LogoutButton } from "@/components/logout-button";
 import { LOCATION_LABELS, SHIFT_LABELS, STATUS_LABELS } from "@/types";
 import type { ApplicationStatus, Location, OfferStatus, Shift } from "@/types";
 import { getPersonalStats } from "@/lib/personal-stats";
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getSupabase } from "@/lib/server-session";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -67,14 +67,13 @@ function applicationStatusBadgeClass(status: ApplicationStatus): string {
 }
 
 export default async function MyRequestsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
+
+  const supabase = await getSupabase();
 
   const [{ data: offersRaw }, { data: applicationsRaw }, stats] = await Promise.all([
     supabase

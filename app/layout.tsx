@@ -6,6 +6,8 @@ import "./globals.css";
 const rubik = Rubik({
   variable: "--font-rubik",
   subsets: ["hebrew", "latin"],
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {

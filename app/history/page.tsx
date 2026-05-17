@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getSupabase } from "@/lib/server-session";
 import { redirect } from "next/navigation";
 import { formatUserDisplay } from "@/lib/format";
 import { LOCATION_LABELS, STATUS_LABELS } from "@/types";
@@ -37,14 +37,13 @@ type HistoryOffer = {
 const trimTime = (value: string) => value.slice(0, 5);
 
 export default async function HistoryPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
+
+  const supabase = await getSupabase();
 
   const { data: offersRaw, error } = await supabase
     .from("swap_offers")

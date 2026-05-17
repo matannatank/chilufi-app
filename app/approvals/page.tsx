@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AppBottomNav } from "@/components/app-bottom-nav";
 import { formatUserDisplay } from "@/lib/format";
 import { getPendingCommanderApprovals } from "@/lib/pending-commander-approvals";
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getCurrentProfile, getSupabase } from "@/lib/server-session";
 import { LOCATION_LABELS, SHIFT_LABELS } from "@/types";
 import type { Shift } from "@/types";
 
@@ -19,27 +19,21 @@ const formatDate = (dateValue: string) => {
 };
 
 export default async function ApprovalsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name, shift")
-    .eq("id", user.id)
-    .maybeSingle();
+  const profile = await getCurrentProfile();
 
   if (profile?.role !== "shift_commander") {
     redirect("/home");
   }
 
+  const supabase = await getSupabase();
   const pendingApprovals = await getPendingCommanderApprovals(supabase, user.id);
-  const userShift = profile.shift as Shift | null;
+  const userShift = profile.shift;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 bg-zinc-100 p-6 text-zinc-900">

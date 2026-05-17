@@ -1,23 +1,16 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getCurrentProfile, getSupabase } from "@/lib/server-session";
 import { NewOfferForm } from "@/components/new-offer-form";
 import type { Shift } from "@/types";
 
 export default async function NewOfferPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("shift")
-    .eq("id", user.id)
-    .maybeSingle();
+  const profile = await getCurrentProfile();
 
   if (!profile?.shift) {
     redirect("/profile/setup");

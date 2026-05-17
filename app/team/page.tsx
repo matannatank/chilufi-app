@@ -3,7 +3,7 @@ import { LogoutButton } from "@/components/logout-button";
 import { formatUserDisplay } from "@/lib/format";
 import type { Shift, UserRole } from "@/types";
 import { ROLE_LABELS, SHIFT_LABELS } from "@/types";
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getSupabase } from "@/lib/server-session";
 import { redirect } from "next/navigation";
 
 type TeamProfile = {
@@ -35,14 +35,13 @@ function sortByName(a: TeamProfile, b: TeamProfile) {
 }
 
 export default async function TeamPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
+
+  const supabase = await getSupabase();
 
   const { data: profilesRaw } = await supabase
     .from("profiles")

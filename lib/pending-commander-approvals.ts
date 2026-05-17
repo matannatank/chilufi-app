@@ -99,6 +99,15 @@ export async function countPendingCommanderApprovals(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<number> {
-  const pending = await getPendingCommanderApprovals(supabase, userId);
-  return pending.length;
+  const { count, error } = await supabase
+    .from("commander_approvals")
+    .select("id", { count: "exact", head: true })
+    .eq("commander_id", userId)
+    .eq("status", "pending");
+
+  if (error) {
+    return 0;
+  }
+
+  return count ?? 0;
 }

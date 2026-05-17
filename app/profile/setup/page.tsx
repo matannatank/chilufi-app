@@ -1,16 +1,15 @@
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getSupabase } from "@/lib/server-session";
 import { redirect } from "next/navigation";
 import { ProfileSetupForm } from "@/components/profile-setup-form";
 
 export default async function ProfileSetupPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
+
+  const supabase = await getSupabase();
 
   const { data: profile } = await supabase
     .from("profiles")

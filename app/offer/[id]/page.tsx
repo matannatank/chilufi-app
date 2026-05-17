@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getSupabase } from "@/lib/server-session";
 import { formatUserDisplay } from "@/lib/format";
 import { APPROVAL_STATUS_LABELS, LOCATION_LABELS, ROLE_LABELS, SHIFT_LABELS, STATUS_LABELS } from "@/types";
 import { OfferActions } from "@/components/offer-actions";
@@ -79,15 +79,13 @@ const trimTime = (timeValue: string) => timeValue.slice(0, 5);
 
 export default async function OfferDetailsPage({ params }: OfferDetailsPageProps) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
+
+  const supabase = await getSupabase();
 
   const { data: offerRaw } = await supabase
     .from("swap_offers")

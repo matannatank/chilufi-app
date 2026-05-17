@@ -1,10 +1,9 @@
-import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { OfferCard } from "@/components/offer-card";
 import { AppBottomNav } from "@/components/app-bottom-nav";
 import { LogoutButton } from "@/components/logout-button";
-import { countPendingCommanderApprovals } from "@/lib/pending-commander-approvals";
+import { getAuthUser, getCurrentProfile, getNavBadges, getSupabase } from "@/lib/server-session";
 import type { Location, OfferStatus, Shift, UserRole } from "@/types";
 
 type HomeOfferRow = {
@@ -38,49 +37,43 @@ type HomeOfferRow = {
 };
 
 export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
 
-  const { data: currentProfile } = await supabase
-    .from("profiles")
-    .select("shift, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const userShift = currentProfile?.shift as Shift | null;
-  const isShiftCommander = currentProfile?.role === "shift_commander";
-  const pendingApprovalsCount = isShiftCommander
-    ? await countPendingCommanderApprovals(supabase, user.id)
-    : 0;
-
-  const { data: myPendingApprovals } = isShiftCommander
-    ? await supabase
-        .from("commander_approvals")
-        .select("offer_id")
-        .eq("commander_id", user.id)
-        .eq("status", "pending")
-    : { data: [] as Array<{ offer_id: string }> };
-
-  const myApprovalOfferIds = new Set(
-    (myPendingApprovals ?? []).map((row) => row.offer_id),
-  );
+  const supabase = await getSupabase();
+  const currentProfile = await getCurrentProfile();
+  const isShiftCommanderForQuery = currentProfile?.role === "shift_commander";
   const currentDate = new Date().toISOString().split("T")[0];
 
-  const { data: offersRaw, error } = await supabase
-    .from("swap_offers")
-    .select(
-      "id, shift_date, start_time, end_time, location, status, poster_id, chosen_applicant_id, target_shift, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
-    )
-    .in("status", ["open", "pending_approval"])
-    .gte("shift_date", currentDate)
-    .order("shift_date", { ascending: true })
-    .order("created_at", { ascending: false });
+  const [navBadges, offersResult, myPendingApprovalsResult] = await Promise.all([
+    getNavBadges(),
+    supabase
+      .from("swap_offers")
+      .select(
+        "id, shift_date, start_time, end_time, location, status, poster_id, chosen_applicant_id, target_shift, profiles!swap_offers_poster_id_fkey(full_name, role, shift, has_hazmat, has_license, has_crane)",
+      )
+      .in("status", ["open", "pending_approval"])
+      .gte("shift_date", currentDate)
+      .order("shift_date", { ascending: true })
+      .order("created_at", { ascending: false }),
+    isShiftCommanderForQuery
+      ? supabase
+          .from("commander_approvals")
+          .select("offer_id")
+          .eq("commander_id", user.id)
+          .eq("status", "pending")
+      : Promise.resolve({ data: [] as Array<{ offer_id: string }> }),
+  ]);
+
+  const userShift = currentProfile?.shift ?? null;
+  const { pendingApprovalsCount, isShiftCommander } = navBadges;
+  const { data: offersRaw, error } = offersResult;
+  const myApprovalOfferIds = new Set(
+    (myPendingApprovalsResult.data ?? []).map((row) => row.offer_id),
+  );
 
   const offers = ((offersRaw ?? []) as HomeOfferRow[]).filter((offer) => {
     if (myApprovalOfferIds.has(offer.id)) return true;

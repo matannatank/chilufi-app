@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { AdminPanel } from "@/components/admin-panel";
 import { AppBottomNav } from "@/components/app-bottom-nav";
 import { isAppAdmin } from "@/lib/app-admin";
-import { createClient } from "@/utils/supabase/server";
+import { getAuthUser, getSupabase } from "@/lib/server-session";
 import type { Shift, ShiftCommanderRequestStatus, UserRole } from "@/types";
 
 type ProfileJoin = { full_name: string; phone?: string; role?: UserRole } | null;
@@ -13,14 +13,13 @@ function normalizeProfile<T extends ProfileJoin>(value: T | T[] | null): T | nul
 }
 
 export default async function AdminPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) {
     redirect("/");
   }
+
+  const supabase = await getSupabase();
 
   const admin = await isAppAdmin(supabase, user.id);
   if (!admin) {
